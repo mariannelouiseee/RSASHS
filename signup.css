@@ -143,3 +143,50 @@ button:hover {
     transform: translateY(0);
   }
 }
+/* Photo Upload */
+.photo-upload {
+  margin-top: 15px;
+}
+
+input[type="file"] {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  width: 100%;
+  cursor: pointer;
+}
+
+input[type="file"]:hover {
+  background-color: #f1f1f1;
+}
+
+.photo-preview {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.photo-preview img {
+  max-width: 150px;
+  max-height: 150px;
+  border-radius: 8px;
+  border: 2px solid #ccc;
+  object-fit: cover;
+  display: none;
+}
+
+.signup-link {
+  margin-top: 20px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.signup-link a {
+  color: #2e7d32;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.signup-link a:hover {
+  text-decoration: underline;
+}

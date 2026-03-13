@@ -1,0 +1,484 @@
+/* Paste this whole block in your existing CSS file */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background: #f1f8e9;
+  min-height: 100vh;
+  color: #2e3a2f;
+}
+
+/* ===== HEADER ===== */
+header {
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  background: linear-gradient(135deg, #2e7d32, #388e3c);
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  height: 80px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+header img {
+  height: 60px;
+  width: 60px;
+  border-radius: 50%;
+  border: 3px solid white;
+  object-fit: cover;
+}
+
+header h2 {
+  margin-left: 15px;
+  text-transform: uppercase;
+  font-size: 22px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+/* Sidebar toggle button (hidden on desktop) */
+.sidebar-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.8rem;
+  cursor: pointer;
+  margin-left: auto;
+  padding: 0 15px;
+  user-select: none;
+}
+
+/* ===== LAYOUT ===== */
+.container {
+  display: flex;
+  min-height: calc(100vh - 80px);
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: 220px;
+  background: linear-gradient(135deg, #2e7d32, #388e3c);
+  color: white;
+  padding-top: 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 3px 0 8px rgba(0, 0, 0, 0.15);
+  transition: left 0.3s ease;
+  position: relative;
+  z-index: 1001;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar li a {
+  display: block;
+  padding: 14px 25px;
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+  border-left: 4px solid transparent;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+  user-select: none;
+}
+
+.sidebar li a:hover,
+.sidebar li a.active {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-left: 4px solid #a5d6a7;
+}
+
+.sidebar li a.logout {
+  margin-top: auto;
+  background-color: #c62828;
+  border-radius: 0 5px 5px 0;
+  font-weight: 700;
+  transition: background-color 0.3s ease;
+}
+
+.sidebar li a.logout:hover {
+  background-color: #8e0000;
+}
+
+/* ===== DROPDOWN MENU ===== */
+.sidebar .dropdown-toggle {
+  display: flex;
+  justify-content: flex-start; /* keep content to the left */
+  align-items: center; /* keeps icon aligned vertically */
+  gap: 10px; /* space between icon and text */
+  padding: 14px 25px;
+  font-weight: 600;
+  font-size: 15px;
+  color: white;
+  border-left: 4px solid transparent;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+  user-select: none;
+}
+
+.sidebar .dropdown-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-left: 4px solid #a5d6a7;
+}
+
+.sidebar .dropdown-toggle .arrow {
+  margin-left: auto; /* pushes arrow to right edge */
+  font-size: 14px;
+}
+
+.sidebar .arrow {
+  transition: transform 0.3s ease;
+  font-size: 14px;
+}
+
+.sidebar .dropdown.open .arrow {
+  transform: rotate(180deg);
+}
+
+.sidebar .dropdown-menu {
+  display: none;
+  flex-direction: column;
+  background-color: rgba(30, 85, 30, 0.9);
+}
+
+.sidebar .dropdown.open .dropdown-menu {
+  display: flex;
+}
+
+.sidebar .dropdown-menu li a {
+  padding: 12px 40px;
+  font-size: 14px;
+  border-left: 4px solid transparent;
+}
+
+.sidebar .dropdown-menu li a:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-left: 4px solid #a5d6a7;
+}
+
+/* Overlay behind sidebar when active on small screens */
+#sidebarOverlay {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  top: 80px;
+  left: 0;
+  width: 100%;
+  height: calc(100vh - 80px);
+  background: rgba(0, 0, 0, 0.5);
+  transition: opacity 0.3s ease;
+}
+
+#sidebarOverlay.active {
+  display: block;
+  opacity: 1;
+}
+
+/* ===== MAIN CONTENT ===== */
+.content {
+  flex-grow: 1;
+  padding: 30px;
+  background: #f9fbe7; /* simple light background */
+  overflow-y: auto;
+  border-radius: 8px 0 0 0;
+}
+
+.content h2 {
+  color: #2e7d32;
+  font-weight: 600;
+  font-size: 22px;
+  margin-bottom: 20px;
+}
+
+/* Teacher list layout - fixed 3 columns */
+.teacher-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  justify-items: center;
+}
+
+/* Teacher card */
+.teacher-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  width: 100%;
+  cursor: pointer;
+  text-decoration: none;
+  border: 1px solid #e0e0e0;
+  transition: transform 0.2s ease;
+}
+
+.teacher-card:hover {
+  transform: translateY(-4px);
+}
+
+.teacher-card img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 50%;
+  margin-bottom: 10px;
+}
+
+.teacher-card h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2e3a2f;
+  margin: 6px 0 2px;
+}
+
+.teacher-card span {
+  font-size: 13px;
+  color: #555;
+}
+
+/* ===== MODAL ===== */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 2000;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(46, 61, 46, 0.5);
+  justify-content: center;
+  align-items: center;
+  padding: 15px;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  max-width: 600px;
+  width: 100%;
+  position: relative;
+}
+
+/* Header */
+.modal-content h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2e7d32;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 8px;
+}
+
+/* Close button */
+.close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #666;
+}
+
+.close:hover {
+  color: #c62828;
+}
+
+/* Modal table */
+.modal-body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+.modal-body th,
+.modal-body td {
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.modal-body th {
+  background-color: #2e7d32;
+  color: #fff;
+  font-weight: 500;
+}
+
+/* Rounded corners for table */
+.modal-body table tr:first-child th:first-child {
+  border-top-left-radius: 6px;
+}
+.modal-body table tr:first-child th:last-child {
+  border-top-right-radius: 6px;
+}
+.modal-body table tr:last-child td:first-child {
+  border-bottom-left-radius: 6px;
+}
+.modal-body table tr:last-child td:last-child {
+  border-bottom-right-radius: 6px;
+}
+
+/* List items inside modal */
+.modal-body ul {
+  padding: 0;
+  margin-top: 10px;
+  list-style: none;
+}
+
+.modal-body li {
+  background: #f1f8e9;
+  margin: 4px 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border-left: 3px solid #66bb6a;
+}
+
+/* Modal adjustments for student grades */
+.modal-split {
+  display: flex;
+  gap: 15px;
+  width: 95%;
+  max-width: 1200px;
+  height: 80%;
+}
+
+.teacher-panel,
+.student-panel {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+}
+
+.student-panel {
+  overflow-x: auto;
+}
+
+#studentTable,
+#subjectTable {
+  font-size: 13px;
+  min-width: 900px;
+}
+
+#studentTable th,
+#subjectTable th {
+  background-color: #2e7d32;
+  color: #fff;
+  font-weight: 500;
+}
+
+#studentTable td,
+#subjectTable td {
+  text-align: center;
+  color: #2e3a2f;
+  white-space: nowrap;
+}
+
+/* Buttons */
+.btn-view,
+.btn-input-grade-header {
+  background: #4caf50;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.btn-view:hover,
+.btn-input-grade-header:hover {
+  background: #388e3c;
+}
+
+.btn-view:active,
+.btn-input-grade-header:active {
+  transform: scale(0.96);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .modal-split {
+    flex-direction: column;
+    height: 90%;
+  }
+}
+
+@media (max-width: 1200px) {
+  .sidebar {
+    position: fixed;
+    top: 80px;
+    left: -250px;
+    width: 220px;
+    height: calc(100vh - 80px);
+    padding-top: 20px;
+    transition: left 0.3s ease;
+    box-shadow: 3px 0 8px rgba(0, 0, 0, 0.15);
+    z-index: 1001;
+  }
+
+  .sidebar.active {
+    left: 0;
+  }
+
+  .container.sidebar-active {
+    margin-left: 0; /* Content takes full width when sidebar hidden */
+  }
+
+  /* Show toggle button on smaller screens */
+  .sidebar-toggle {
+    display: block;
+  }
+
+  /* Overlay for sidebar */
+  #sidebarOverlay.active {
+    display: block;
+    opacity: 1;
+  }
+}
+
+/* Small devices adjustments */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 70vw;
+    left: -70vw;
+  }
+
+  .sidebar.active {
+    left: 0;
+  }
+
+  .container.sidebar-active {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 1024px) {
+  .teacher-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .teacher-list {
+    grid-template-columns: 1fr;
+  }
+}

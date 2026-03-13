@@ -1,6 +1,7 @@
 <?php
 include("connect.php");
-session_start();
+include("functions.php");
+session_start(); // Start session for logging
 
 $message = "";
 $modalType = ""; // 'success', 'error', or 'warning'
@@ -17,12 +18,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $contact = $_POST['contact'];
     $email = $_POST['email'];
     $address = $_POST['address'];
-
     $last_school = $_POST['last_school'];
     $school_address = $_POST['school_address'];
     $date_attended = $_POST['date_attended'];
     $honors_received = $_POST['honors_received'];
-
     $father_name = $_POST['father_name'];
     $father_occupation = $_POST['father_occupation'];
     $mother_name = $_POST['mother_name'];
@@ -30,85 +29,110 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $guardian_name = $_POST['guardian_name'];
     $guardian_contact = $_POST['guardian_contact'];
 
-    // Check if student ID already exists in users table
-    $check_sql = "SELECT id FROM users WHERE username = ?";
-    $check_stmt = $conn->prepare($check_sql);
-    $check_stmt->bind_param("s", $student_id);
-    $check_stmt->execute();
-    $check_stmt->store_result();
+    // Handle image upload
+    $image_name = "";
+    if (isset($_FILES['student_image']) && $_FILES['student_image']['error'] === UPLOAD_ERR_OK) {
+        $allowed_types = ['image/jpeg', 'image/png', 'image/jpg'];
+        $file_tmp = $_FILES['student_image']['tmp_name'];
+        $file_type = mime_content_type($file_tmp);
+        $file_size = $_FILES['student_image']['size'];
 
-    if ($check_stmt->num_rows > 0) {
-        $message = "Student ID already exists.";
-        $modalType = "error";
-        $check_stmt->close();
-    } else {
-        $check_stmt->close();
-
-        // Insert into students table
-        $sql = "INSERT INTO students (
-            student_id, first_name, middle_name, last_name, extension_name, gender, birthday, contact, email, address,
-            last_school, school_address, date_attended, honors_received,
-            father_name, father_occupation, mother_name, mother_occupation, guardian_name, guardian_contact
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param(
-            "ssssssssssssssssssss",
-            $student_id,
-            $first_name,
-            $middle_name,
-            $last_name,
-            $extension_name,
-            $gender,
-            $birthday,
-            $contact,
-            $email,
-            $address,
-            $last_school,
-            $school_address,
-            $date_attended,
-            $honors_received,
-            $father_name,
-            $father_occupation,
-            $mother_name,
-            $mother_occupation,
-            $guardian_name,
-            $guardian_contact
-        );
-
-        if ($stmt->execute()) {
-            // Create user account
-            $username = $student_id;
-            $password = date("mdY", strtotime($birthday));
-            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-
-            $user_sql = "INSERT INTO users (username, password, role) VALUES (?, ?, 'student')";
-            $user_stmt = $conn->prepare($user_sql);
-            $user_stmt->bind_param("ss", $username, $hashed_password);
-
-            if ($user_stmt->execute()) {
-                $message = "Student registered successfully.";
-                $modalType = "success";
-            } else {
-                $message = "Student saved, but failed to create login account: " . $user_stmt->error;
-                $modalType = "warning";
+        if (in_array($file_type, $allowed_types) && $file_size <= 2 * 1024 * 1024) { // 2MB limit
+            $image_ext = pathinfo($_FILES['student_image']['name'], PATHINFO_EXTENSION);
+            $image_name = uniqid("student_", true) . "." . $image_ext;
+            $upload_dir = "uploads/";
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0777, true);
             }
-
-            $user_stmt->close();
+            move_uploaded_file($file_tmp, $upload_dir . $image_name);
         } else {
-            $message = "Error: " . $stmt->error;
+            $message = "Invalid image file. Only JPG/PNG under 2MB are allowed.";
             $modalType = "error";
         }
+    }
 
-        $stmt->close();
+    if ($modalType !== "error") {
+        // Check if student ID already exists in users table
+        $check_sql = "SELECT id FROM users WHERE username = ?";
+        $check_stmt = $conn->prepare($check_sql);
+        $check_stmt->bind_param("s", $student_id);
+        $check_stmt->execute();
+        $check_stmt->store_result();
+
+        if ($check_stmt->num_rows > 0) {
+            $message = "Student ID already exists.";
+            $modalType = "error";
+            $check_stmt->close();
+        } else {
+            $check_stmt->close();
+
+            // Insert into students table
+            $sql = "INSERT INTO students (
+                student_id, first_name, middle_name, last_name, extension_name, gender, birthday, contact, email, address,
+                last_school, school_address, date_attended, honors_received,
+                father_name, father_occupation, mother_name, mother_occupation, guardian_name, guardian_contact, student_image
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param(
+                "sssssssssssssssssssss",
+                $student_id,
+                $first_name,
+                $middle_name,
+                $last_name,
+                $extension_name,
+                $gender,
+                $birthday,
+                $contact,
+                $email,
+                $address,
+                $last_school,
+                $school_address,
+                $date_attended,
+                $honors_received,
+                $father_name,
+                $father_occupation,
+                $mother_name,
+                $mother_occupation,
+                $guardian_name,
+                $guardian_contact,
+                $image_name
+            );
+
+            if ($stmt->execute()) {
+                // Create user account
+                $username = $student_id;
+                $password = date("mdY", strtotime($birthday));
+                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+                $user_sql = "INSERT INTO users (username, password, role) VALUES (?, ?, 'student')";
+                $user_stmt = $conn->prepare($user_sql);
+                $user_stmt->bind_param("ss", $username, $hashed_password);
+
+                if ($user_stmt->execute()) {
+                    $message = "Student registered successfully.";
+                    $modalType = "success";
+
+                    // ===== ADD LOG: Student signed up =====
+                    addLog($conn, $student_id, 'student', "New student account created via signup.");
+                } else {
+                    $message = "Student saved, but failed to create login account: " . $user_stmt->error;
+                    $modalType = "warning";
+                }
+
+                $user_stmt->close();
+            } else {
+                $message = "Error: " . $stmt->error;
+                $modalType = "error";
+            }
+
+            $stmt->close();
+        }
     }
 
     $conn->close();
 }
 ?>
-
-
-
 
 
 <!DOCTYPE html>
@@ -128,15 +152,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
         <?php if ($modalType === "success"): ?>
             <script>
-                setTimeout(function () {
-                    window.location.href = "login.php"; 
+                setTimeout(function() {
+                    window.location.href = "login.php";
                 }, 2000);
             </script>
         <?php endif; ?>
     <?php endif; ?>
     <div class="signup-container">
         <h2>RSASHS Student Sign-Up Form</h2>
-        <form action="#" method="POST">
+        <form action="#" method="POST" enctype="multipart/form-data">
 
             <fieldset>
                 <legend>Personal Information</legend>
@@ -180,6 +204,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 <label>Address:</label>
                 <textarea name="address" rows="3" required></textarea>
+
+                <div class="photo-upload">
+                    <label>Upload Photo:</label>
+                    <input type="file" name="student_image" accept="image/*" onchange="previewPhoto(event)" required>
+                    <div class="photo-preview">
+                        <img id="photoPreview" alt="Preview">
+                    </div>
+                </div>
+
             </fieldset>
 
 
@@ -232,8 +265,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </fieldset>
 
             <button type="submit">Sign Up</button>
+            <div class="signup-link">
+                Already have an account? <a href="login.php">Log in</a>
+            </div>
         </form>
     </div>
+    <script>
+        function previewPhoto(event) {
+            const preview = document.getElementById('photoPreview');
+            const file = event.target.files[0];
+
+            if (file) {
+                preview.src = URL.createObjectURL(file);
+                preview.style.display = "block";
+            } else {
+                preview.src = "";
+                preview.style.display = "none";
+            }
+        }
+    </script>
+
 
 </body>
 

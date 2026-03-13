@@ -1,0 +1,255 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+  min-height: 100vh;
+}
+
+html {
+  overflow-x: hidden; /* ✅ prevent horizontal scroll but allow vertical */
+}
+
+/* ===== HEADER STYLES ===== */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+header img {
+  height: 60px;
+  width: 60px;
+  border-radius: 50%;
+}
+
+header h2 {
+  margin-left: 20px;
+  text-transform: uppercase;
+  color: #2e7d32;
+  font-size: 22px;
+}
+
+.menu-toggle {
+  display: none;
+  font-size: 28px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #2e7d32;
+  padding: 8px;
+  z-index: 1001;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+}
+
+.navbar ul {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 20px;
+}
+
+.navbar li a {
+  text-decoration: none;
+  color: #2e7d32;
+  font-weight: bold;
+  padding: 8px 14px;
+  border-radius: 6px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.navbar li a:hover,
+.navbar li a.active {
+  background-color: #c8e6c9;
+  color: #1b5e20;
+}
+
+.navbar li a.logout {
+  background-color: #2e7d32;
+  color: white;
+}
+
+.navbar li a.logout:hover {
+  background-color: #1b5e20;
+}
+/* ===== PROFILE CONTAINER ===== */
+.profile-container {
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  max-width: 1000px;
+  margin: 40px auto;
+}
+
+.profile-container h2 {
+  text-align: center;
+  color: #2e7d32;
+  margin-bottom: 20px;
+  font-size: 26px;
+  font-weight: bold;
+  border-bottom: 2px solid #c8e6c9;
+  padding-bottom: 10px;
+}
+
+/* ===== SHS Report Card Table Style ===== */
+.subjects-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-family: "Times New Roman", serif;
+  font-size: 14px;
+  color: #000;
+}
+
+/* Table Borders */
+.subjects-table th,
+.subjects-table td {
+  border: 1px solid #000;
+  padding: 8px 6px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Header Styling */
+.subjects-table thead th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+/* Semester Titles (First Semester / Second Semester) */
+.semester-title {
+  font-weight: bold;
+  text-align: left;
+  padding: 10px 0;
+}
+
+/* Section Headers */
+.section-header {
+  font-weight: bold;
+  text-align: left;
+  background-color: #f9f9f9;
+  padding-left: 8px;
+}
+
+/* Subject Names */
+.subjects-table td.subject-name {
+  text-align: left;
+  padding-left: 10px;
+}
+
+/* Quarter & Final Columns */
+.subjects-table td.quarter,
+.subjects-table td.sem-final {
+  font-weight: normal;
+}
+
+/* Highlight GWA or Final Grade (optional) */
+.subjects-table td.final-grade {
+  font-weight: bold;
+}
+
+/* General Average Row */
+.general-average {
+  font-weight: bold;
+  text-align: right;
+  background-color: #f2f2f2;
+}
+
+/* Optional: No hover effects, as official report card is static */
+.subjects-table tr:hover {
+  background-color: inherit;
+}
+
+/* Thin horizontal lines for clarity */
+.subjects-table tr td,
+.subjects-table tr th {
+  border-width: 1px;
+}
+
+/* ===== RESPONSIVE HEADER ===== */
+@media (max-width: 768px) {
+  header {
+    flex-wrap: wrap;
+    padding: 10px 15px;
+  }
+
+  header h2 {
+    font-size: 18px;
+    margin-left: 15px;
+  }
+
+  .menu-toggle {
+    display: block;
+    order: 3;
+  }
+
+  .navbar {
+    order: 4;
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .navbar ul {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    gap: 0;
+    background-color: #f4fbf4;
+    padding: 15px 0;
+    border-radius: 8px;
+    border: 1px solid #c8e6c9;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .navbar ul.active {
+    display: flex;
+    animation: slideDown 0.3s ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .navbar li a {
+    display: block;
+    padding: 12px 20px;
+    width: 100%;
+    margin: 2px 0;
+    border-radius: 0;
+  }
+
+  .navbar li a.logout {
+    margin: 8px 20px;
+    border-radius: 6px;
+    text-align: center;
+    width: calc(100% - 40px);
+  }
+}

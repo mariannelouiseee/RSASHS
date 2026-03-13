@@ -1,0 +1,252 @@
+body {
+  font-family: "Times New Roman", Times, serif;
+  margin: 0;
+  padding: 0;
+}
+
+.page {
+  width: 100%;
+  max-width: 297mm;
+  min-height: 210mm;
+  page-break-after: always;
+  padding: 15mm;
+  box-sizing: border-box;
+}
+
+.container {
+  display: flex;
+  gap: 20px;
+  height: calc(100% - 40px);
+}
+
+.left-section {
+  flex: 1;
+}
+
+.right-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.values-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.values-table {
+  flex: 1;
+}
+
+h2 {
+  text-align: center;
+  font-size: 10pt;
+  font-weight: bold;
+  margin: 0 0 10px 0;
+  text-transform: uppercase;
+}
+
+h3 {
+  text-align: left;
+  font-size: 9pt;
+  font-weight: bold;
+  margin: 10px 0 5px 0;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 8pt;
+  margin-bottom: 10px;
+}
+
+th,
+td {
+  border: 1px solid #000;
+  padding: 5px 6px;
+  text-align: center;
+}
+
+th {
+  background-color: #fff;
+  font-weight: bold;
+}
+
+.subject-col {
+  text-align: left;
+  font-weight: normal;
+}
+
+.category-header {
+  font-weight: bold;
+  text-align: left;
+  background-color: #fff;
+}
+
+.indent {
+  padding-left: 10px;
+}
+
+.average-row {
+  font-weight: normal;
+}
+
+.average-row .no-border {
+  border: none;
+}
+
+.average-row .with-border {
+  border: 1px solid #000;
+}
+
+.values-table th,
+.values-table td {
+  font-size: 7pt;
+}
+
+.behavior-col {
+  text-align: left;
+  width: 45%;
+  padding: 10px 8px;
+}
+
+.core-value-col {
+  width: 15%;
+  font-weight: bold;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.quarter-col {
+  width: 8%;
+}
+
+.legend {
+  font-size: 8pt;
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.legend h4 {
+  font-size: 8pt;
+  font-weight: bold;
+  margin: 8px 0 3px 0;
+}
+
+.legend-row {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 5px;
+}
+
+.legend-column {
+  flex: 1;
+}
+
+.legend-item {
+  margin: 1px 0;
+}
+
+.grading-table {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.grading-table td {
+  border: none;
+  text-align: left;
+  padding: 1px 4px;
+  font-size: 7pt;
+  line-height: 1.2;
+}
+
+.grading-header {
+  font-weight: bold;
+  padding-right: 10px;
+}
+
+.button-container {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 1000;
+}
+
+.btn {
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.btn-print {
+  background-color: #007bff;
+  color: white;
+}
+
+.btn-print:hover {
+  background-color: #0056b3;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.btn-close {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-close:hover {
+  background-color: #5a6268;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+@media print {
+  @page {
+    margin: 15mm;
+  }
+
+  body {
+    width: 100%;
+    background-color: white !important;
+  }
+
+  body > div {
+    display: block !important;
+    background-color: white !important;
+  }
+
+  .page {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  button,
+  .button-container {
+    display: none !important;
+  }
+
+  .page {
+    page-break-after: always;
+  }
+
+  /* Hide header and footer when printing */
+  @page {
+    margin: 15mm;
+    size: auto;
+  }
+
+  body::before,
+  body::after {
+    display: none !important;
+  }
+}

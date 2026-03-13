@@ -1,0 +1,270 @@
+/* ===== RESET ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+  min-height: 100vh;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+/* ===== HEADER ===== */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background-color: white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+header img {
+  height: 60px;
+  width: 60px;
+  border-radius: 50%;
+}
+
+header h2 {
+  margin-left: 20px;
+  text-transform: uppercase;
+  color: #2e7d32;
+  font-size: 22px;
+}
+
+.menu-toggle {
+  display: none;
+  font-size: 28px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #2e7d32;
+  padding: 8px;
+  z-index: 1001;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+}
+
+.navbar ul {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 20px;
+}
+
+.navbar li a {
+  text-decoration: none;
+  color: #2e7d32;
+  font-weight: bold;
+  padding: 8px 14px;
+  border-radius: 6px;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
+}
+
+.navbar li a:hover,
+.navbar li a.active {
+  background-color: #c8e6c9;
+  color: #1b5e20;
+}
+
+.navbar li a.logout {
+  background-color: #2e7d32;
+  color: white;
+}
+
+.navbar li a.logout:hover {
+  background-color: #1b5e20;
+}
+
+/* ===== SUBJECTS CONTAINER ===== */
+.subjects-container {
+  max-width: 1100px;
+  margin: 30px auto;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.subjects-container h3 {
+  text-align: center;
+  font-size: 22px;
+  margin-bottom: 20px;
+  color: #2e7d32;
+}
+
+/* ===== TABLE CARD ===== */
+.subjects-container h4 {
+  margin-top: 30px;
+  margin-bottom: 12px;
+  padding-left: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2e7d32;
+  border-left: 5px solid #2e7d32;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 10px;
+  overflow: hidden;
+  table-layout: fixed;
+  margin-bottom: 25px;
+}
+
+th,
+td {
+  border: 1px solid #e0e0e0;
+  padding: 12px;
+  text-align: center;
+  font-size: 0.9rem;
+  width: 33.33%;
+  word-wrap: break-word;
+}
+
+th {
+  background: linear-gradient(135deg, #2e7d32, #388e3c);
+  color: #fff;
+  letter-spacing: 0.3px;
+}
+
+tbody tr:nth-child(even) {
+  background-color: #f8fdf8;
+}
+
+tbody tr:hover {
+  background-color: #e8f5e9;
+  transition: background 0.2s ease-in-out;
+}
+
+/* ===== BUTTON ===== */
+.btn-view-students {
+  display: inline-block;
+  background: linear-gradient(135deg, #2e7d32, #43a047);
+  color: #fff;
+  padding: 7px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.btn-view-students:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(46, 125, 50, 0.3);
+}
+
+.btn-print {
+  display: inline-block;
+  padding: 4px 8px;
+  background-color: #2e7d32;
+  color: #fff;
+  border-radius: 5px;
+  text-decoration: none;
+  font-size: 12px;
+  transition: background 0.3s;
+}
+
+.btn-print:hover {
+  background-color: #1b5e20;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .menu-toggle {
+    display: block;
+  }
+
+  .navbar {
+    position: absolute;
+    top: 100%;
+    right: 20px;
+    width: 220px;
+    background-color: #f4fbf4;
+    border-radius: 8px;
+    border: 1px solid #c8e6c9;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    display: none;
+    z-index: 1000;
+  }
+
+  .navbar.active {
+    display: block;
+    animation: slideDown 0.25s ease-out;
+  }
+
+  .navbar ul {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .navbar li {
+    width: 100%;
+  }
+
+  .navbar li a,
+  .navbar .teacher-name {
+    display: block;
+    padding: 12px 15px;
+    width: 100%;
+    text-align: left;
+  }
+
+  .navbar li a.logout {
+    display: block;
+    width: calc(100% - 30px);
+    margin: 10px auto;
+    text-align: center;
+    padding: 12px;
+  }
+
+  th,
+  td {
+    font-size: 0.8rem;
+    padding: 8px;
+  }
+
+  .subjects-container {
+    padding: 15px;
+  }
+
+  .subjects-container h4 {
+    font-size: 16px;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
