@@ -7,6 +7,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link rel="stylesheet" href="announcement.css" />
+    <style>
+        /* Pagination Styles */
+        .pagination-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .pagination li a,
+        .pagination li span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 34px;
+            height: 34px;
+            padding: 0 8px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            background: #fff;
+            color: #333;
+            font-size: 13px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
+        }
+
+        .pagination li a:hover {
+            background: #e8f5e9;
+            border-color: #2e7d32;
+            color: #2e7d32;
+        }
+
+        .pagination li.active span {
+            background: #2e7d32;
+            border-color: #2e7d32;
+            color: #fff;
+            font-weight: bold;
+            cursor: default;
+        }
+
+        .pagination li.disabled span {
+            background: #f5f5f5;
+            border-color: #e0e0e0;
+            color: #aaa;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
 
 <body>
@@ -68,7 +128,6 @@
 
                     <div class="form-grid">
 
-                        <!-- Title -->
                         <div class="full">
                             <label>Title</label>
                             <input type="text" name="title" required
@@ -76,18 +135,15 @@
                                 value="<?= htmlspecialchars($editData['title'] ?? ''); ?>">
                         </div>
 
-                        <!-- Message -->
                         <div class="full">
                             <label>Message</label>
                             <textarea name="message" rows="5" required
                                 placeholder="Write the announcement message here…"><?= htmlspecialchars($editData['message'] ?? ''); ?></textarea>
                         </div>
 
-                        <!-- Publish Options -->
                         <div class="full">
                             <label>Publish Options</label>
                             <div class="schedule-toggle-group">
-
                                 <label>
                                     <input type="radio" name="schedule_type" value="now" id="opt_now"
                                         <?= (!$editData || ($editData['status'] ?? '') !== 'scheduled') ? 'checked' : ''; ?>>
@@ -95,7 +151,6 @@
                                         <i class="fas fa-paper-plane"></i> Publish Now
                                     </span>
                                 </label>
-
                                 <label>
                                     <input type="radio" name="schedule_type" value="schedule" id="opt_schedule"
                                         <?= (($editData['status'] ?? '') === 'scheduled') ? 'checked' : ''; ?>>
@@ -103,10 +158,8 @@
                                         <i class="fas fa-clock"></i> Schedule
                                     </span>
                                 </label>
-
                             </div>
 
-                            <!-- DateTime picker — shown only when "Schedule" is selected -->
                             <div class="schedule-picker <?= (($editData['status'] ?? '') === 'scheduled') ? 'visible' : ''; ?>" id="schedulePicker">
                                 <label style="margin-top:12px;">Publish Date &amp; Time</label>
                                 <input type="datetime-local" name="scheduled_at" id="scheduledAt"
@@ -114,7 +167,6 @@
                             </div>
                         </div>
 
-                        <!-- Image Upload -->
                         <div class="full">
                             <label>
                                 Image
@@ -133,7 +185,7 @@
                             <?php endif; ?>
                         </div>
 
-                    </div><!-- /.form-grid -->
+                    </div>
 
                     <div class="form-actions">
                         <button type="submit">
@@ -147,8 +199,7 @@
                         <?php endif; ?>
                     </div>
                 </form>
-            </div><!-- /.box -->
-
+            </div>
 
             <!-- ── TABS ── -->
             <div class="tab-nav">
@@ -164,129 +215,136 @@
 
             <!-- ── PUBLISHED TAB ── -->
             <div class="tab-panel active" id="tab-published">
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Date Posted</th>
-                                <th>Image</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if ($published && mysqli_num_rows($published) > 0): ?>
-                                <?php while ($row = mysqli_fetch_assoc($published)): ?>
-                                    <tr>
-                                        <td class="title-cell"><?= htmlspecialchars($row['title']); ?></td>
-                                        <td>
-                                            <span class="date-chip">
+                <div class="cards-list">
+                    <?php if ($published && mysqli_num_rows($published) > 0): ?>
+                        <?php while ($row = mysqli_fetch_assoc($published)): ?>
+                            <div class="ann-card">
+                                <div class="ann-card-accent"></div>
+                                <div class="ann-card-body">
+                                    <div class="ann-card-main">
+                                        <div class="ann-card-meta">
+                                            <span class="chip chip-pub">
+                                                <i class="fas fa-check-circle"></i> Published
+                                            </span>
+                                            <span class="chip chip-date">
                                                 <i class="fas fa-calendar-alt"></i>
                                                 <?= date('M d, Y', strtotime($row['created_at'])); ?>
                                             </span>
-                                        </td>
-                                        <td>
-                                            <?php if (!empty($row['image'])): ?>
-                                                <img class="thumb"
-                                                    src="uploads/<?= htmlspecialchars($row['image']); ?>"
-                                                    alt="Announcement Image">
-                                            <?php else: ?>
-                                                <span class="no-img">No image</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="actions">
-                                            <a class="btn-edit" href="?edit=<?= $row['id']; ?>">
-                                                <i class="fas fa-pen"></i> Edit
-                                            </a>
-                                            <a class="btn-delete"
-                                                href="?delete=<?= $row['id']; ?>"
-                                                onclick="return confirm('Delete this announcement?')">
-                                                <i class="fas fa-trash"></i> Delete
-                                            </a>
-                                        </td>
-                                    </tr>
-                                <?php endwhile; ?>
-                            <?php else: ?>
-                                <tr class="empty-row">
-                                    <td colspan="4">
-                                        <span class="empty-icon"><i class="fas fa-inbox"></i></span>
-                                        No published announcements yet.
-                                    </td>
-                                </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                                        </div>
+                                        <div class="ann-card-title"><?= htmlspecialchars($row['title']); ?></div>
+                                        <div class="ann-card-msg"><?= htmlspecialchars($row['message']); ?></div>
+                                        <div class="ann-card-footer">
+                                            <div class="ann-card-actions">
+                                                <a class="btn-edit" href="?edit=<?= $row['id']; ?>">
+                                                    <i class="fas fa-pen"></i> Edit
+                                                </a>
+                                                <a class="btn-delete"
+                                                    href="?delete=<?= $row['id']; ?>"
+                                                    onclick="return confirm('Delete this announcement?')">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <?php if (!empty($row['image'])): ?>
+                                        <img class="ann-thumb"
+                                            src="uploads/<?= htmlspecialchars($row['image']); ?>"
+                                            alt="Announcement Image">
+                                    <?php else: ?>
+                                        <div class="ann-thumb-ph"><i class="fas fa-image"></i></div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            No published announcements yet.
+                        </div>
+                    <?php endif; ?>
                 </div>
-            </div><!-- /#tab-published -->
+
+                <?= renderAnnPagination($page_pub, $pub_pages, 'page_pub', 'published') ?>
+            </div>
 
             <!-- ── SCHEDULED TAB ── -->
             <div class="tab-panel" id="tab-scheduled">
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Scheduled For</th>
-                                <th>Image</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if ($scheduled && mysqli_num_rows($scheduled) > 0): ?>
-                                <?php while ($row = mysqli_fetch_assoc($scheduled)): ?>
-                                    <tr>
-                                        <td class="title-cell"><?= htmlspecialchars($row['title']); ?></td>
-                                        <td>
-                                            <span class="sched-chip">
-                                                <i class="fas fa-clock"></i>
-                                                <?php
-                                                /* FIX: guard against null/invalid scheduled_at */
-                                                $sched_ts = !empty($row['scheduled_at']) ? strtotime($row['scheduled_at']) : false;
-                                                echo $sched_ts ? date('M d, Y · g:i A', $sched_ts) : '—';
-                                                ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <?php if (!empty($row['image'])): ?>
-                                                <img class="thumb"
-                                                    src="uploads/<?= htmlspecialchars($row['image']); ?>"
-                                                    alt="Announcement Image">
-                                            <?php else: ?>
-                                                <span class="no-img">No image</span>
+                <div class="cards-list">
+                    <?php if ($scheduled && mysqli_num_rows($scheduled) > 0): ?>
+                        <?php while ($row = mysqli_fetch_assoc($scheduled)): ?>
+                            <?php
+                            $sched_ts  = !empty($row['scheduled_at']) ? strtotime($row['scheduled_at']) : false;
+                            $tomorrow  = strtotime('tomorrow midnight');
+                            $day_after = strtotime('+2 days midnight');
+                            $is_tomorrow = $sched_ts && ($sched_ts >= $tomorrow && $sched_ts < $day_after);
+                            $sched_label = $sched_ts ? date('M d, Y · g:i A', $sched_ts) : '—';
+                            $pub_label   = $sched_ts
+                                ? ($is_tomorrow ? 'Publishes tomorrow at ' . date('g:i A', $sched_ts)
+                                    : 'Publishes ' . date('M d', $sched_ts) . ' at ' . date('g:i A', $sched_ts))
+                                : 'Publish time not set';
+                            ?>
+                            <div class="ann-card warn-card">
+                                <div class="ann-card-accent warn"></div>
+                                <div class="ann-card-body">
+                                    <div class="ann-card-main">
+                                        <div class="ann-card-meta">
+                                            <?php if ($is_tomorrow): ?>
+                                                <span class="chip chip-tomorrow">
+                                                    <i class="fas fa-sun"></i> Tomorrow
+                                                </span>
                                             <?php endif; ?>
-                                        </td>
-                                        <td class="actions">
-                                            <a class="btn-publish"
-                                                href="?publish_now=<?= $row['id']; ?>"
-                                                onclick="return confirm('Publish this announcement now?')">
-                                                <i class="fas fa-paper-plane"></i> Publish Now
-                                            </a>
-                                            <a class="btn-edit" href="?edit=<?= $row['id']; ?>">
-                                                <i class="fas fa-pen"></i> Edit
-                                            </a>
-                                            <a class="btn-delete"
-                                                href="?delete=<?= $row['id']; ?>"
-                                                onclick="return confirm('Delete this announcement?')">
-                                                <i class="fas fa-trash"></i> Delete
-                                            </a>
-                                        </td>
-                                    </tr>
-                                <?php endwhile; ?>
-                            <?php else: ?>
-                                <tr class="empty-row">
-                                    <td colspan="4">
-                                        <span class="empty-icon"><i class="fas fa-clock"></i></span>
-                                        No scheduled announcements.
-                                    </td>
-                                </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                                            <span class="chip chip-sched">
+                                                <i class="fas fa-clock"></i>
+                                                <?= $sched_label; ?>
+                                            </span>
+                                        </div>
+                                        <div class="ann-card-title"><?= htmlspecialchars($row['title']); ?></div>
+                                        <div class="ann-card-msg"><?= htmlspecialchars($row['message']); ?></div>
+                                        <div class="ann-card-footer">
+                                            <span class="pub-status-chip">
+                                                <i class="fas fa-lock"></i>
+                                                <?= $pub_label; ?>
+                                            </span>
+                                            <div class="ann-card-actions">
+                                                <a class="btn-publish"
+                                                    href="?publish_now=<?= $row['id']; ?>"
+                                                    onclick="return confirm('Publish this announcement now?')">
+                                                    <i class="fas fa-paper-plane"></i> Publish Now
+                                                </a>
+                                                <a class="btn-edit" href="?edit=<?= $row['id']; ?>">
+                                                    <i class="fas fa-pen"></i> Edit
+                                                </a>
+                                                <a class="btn-delete"
+                                                    href="?delete=<?= $row['id']; ?>"
+                                                    onclick="return confirm('Delete this announcement?')">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <?php if (!empty($row['image'])): ?>
+                                        <img class="ann-thumb"
+                                            src="uploads/<?= htmlspecialchars($row['image']); ?>"
+                                            alt="Announcement Image">
+                                    <?php else: ?>
+                                        <div class="ann-thumb-ph"><i class="fas fa-image"></i></div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <div class="empty-state">
+                            <i class="fas fa-clock"></i>
+                            No scheduled announcements.
+                        </div>
+                    <?php endif; ?>
                 </div>
-            </div><!-- /#tab-scheduled -->
+
+                <?= renderAnnPagination($page_sch, $sch_pages, 'page_sch', 'scheduled') ?>
+            </div>
 
         </main>
-    </div><!-- /.container -->
+    </div>
 
     <!-- ═══════ SCRIPTS ═══════ -->
     <script>
@@ -313,10 +371,9 @@
         const picker = document.getElementById('schedulePicker');
         const dtInput = document.getElementById('scheduledAt');
 
-        /* FIX: Set minimum datetime to right now so past times can't be chosen */
         function setMinDateTime() {
             const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // local ISO
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             dtInput.min = now.toISOString().slice(0, 16);
         }
 
@@ -351,19 +408,29 @@
         }
 
         /* ── Tabs ── */
+        function activateTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            const btn = document.querySelector('[data-tab="' + tabName + '"]');
+            const panel = document.getElementById('tab-' + tabName);
+            if (btn) btn.classList.add('active');
+            if (panel) panel.classList.add('active');
+        }
+
         document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-            });
+            btn.addEventListener('click', () => activateTab(btn.dataset.tab));
         });
 
-        /* ── Open scheduled tab automatically if there are scheduled items & hash matches ── */
-        if (window.location.hash === '#scheduled') {
-            document.querySelector('[data-tab="scheduled"]').click();
-        }
+        /* ── Auto-open correct tab based on URL hash or active pagination ── */
+        (function() {
+            const hash = window.location.hash.replace('#', '');
+            const params = new URLSearchParams(window.location.search);
+            if (hash === 'scheduled' || params.has('page_sch')) {
+                activateTab('scheduled');
+            } else if (hash === 'published' || params.has('page_pub')) {
+                activateTab('published');
+            }
+        })();
 
         /* ════ INACTIVITY LOGOUT ════ */
         (function() {

@@ -4,8 +4,7 @@ $conn = mysqli_connect(
     "localhost",
     "root",
     "",
-    "rsashs_eportal",
-    3307
+    "rsashs_eportal"
 );
 
 if (!$conn) {

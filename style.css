@@ -47,7 +47,7 @@ body {
 }
 
 body {
-  font-family: "Outfit", sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background: url("./img/bg.jpg") no-repeat center center / cover;
   background-attachment: fixed;
   color: var(--ink);
@@ -133,7 +133,7 @@ header a:hover {
   flex-shrink: 0;
 }
 .ann-section-head h2 {
-  font-family: "Playfair Display", serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   font-size: clamp(1.5rem, 2.8vw, 2.2rem);
   font-weight: 700;
   color: var(--ink);
@@ -171,7 +171,7 @@ header a:hover {
   border-radius: 30px;
   border: 1.5px solid var(--border);
   background: var(--card-bg);
-  font-family: "Outfit", sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   font-size: 0.86rem;
   font-weight: 600;
   color: var(--muted);
@@ -378,7 +378,7 @@ header a:hover {
   position: absolute;
   top: 28px;
   right: 36px;
-  font-family: "Playfair Display", serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   font-size: 5.5rem;
   font-weight: 700;
   color: var(--green-50);
@@ -430,7 +430,7 @@ header a:hover {
 }
 
 .pub-slide-body h3 {
-  font-family: "Playfair Display", serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   font-size: 1.55rem;
   font-weight: 700;
   color: var(--ink);
@@ -814,7 +814,7 @@ header a:hover {
 }
 
 .sch-card h4 {
-  font-family: "Playfair Display", serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   font-size: 1rem;
   font-weight: 700;
   color: var(--ink);
@@ -982,7 +982,7 @@ header a:hover {
 }
 
 .ann-modal-body h2 {
-  font-family: "Playfair Display", serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   font-size: 1.6rem;
   font-weight: 700;
   color: var(--ink);

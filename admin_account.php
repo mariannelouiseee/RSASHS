@@ -6,21 +6,45 @@ $selected_role = isset($_GET['role']) ? $_GET['role'] : 'student';
 
 $dropdown_label = $selected_role === 'teacher' ? "TEACHERS ACCOUNT" : "STUDENTS ACCOUNT";
 
+// Pagination settings
+$records_per_page = 10;
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) $page = 1;
+$offset = ($page - 1) * $records_per_page;
+
 if ($selected_role === 'student') {
+    $count_sql = "SELECT COUNT(*) AS total FROM students s JOIN users u ON s.student_id = u.username WHERE u.role = 'student'";
     $sql = "SELECT s.student_id, s.first_name, s.middle_name, s.last_name, s.birthday, s.student_image, 
                u.role
         FROM students s
         JOIN users u ON s.student_id = u.username
-        WHERE u.role = 'student'";
+        WHERE u.role = 'student'
+        LIMIT $records_per_page OFFSET $offset";
 } else if ($selected_role === 'teacher') {
+    $count_sql = "SELECT COUNT(*) AS total FROM teachers t JOIN users u ON t.teacher_id = u.username WHERE u.role = 'teacher'";
     $sql = "SELECT t.teacher_id AS student_id, t.first_name, t.middle_name, t.last_name, 
                NULL AS birthday, t.teacher_image,
                u.role
         FROM teachers t
         JOIN users u ON t.teacher_id = u.username
-        WHERE u.role = 'teacher'";
+        WHERE u.role = 'teacher'
+        LIMIT $records_per_page OFFSET $offset";
 } else {
     $sql = "";
+    $count_sql = "";
+}
+
+$total_records = 0;
+$total_pages = 1;
+
+if (!empty($count_sql)) {
+    $count_result = $conn->query($count_sql);
+    if ($count_result) {
+        $count_row = $count_result->fetch_assoc();
+        $total_records = (int)$count_row['total'];
+        $total_pages = ceil($total_records / $records_per_page);
+        if ($page > $total_pages && $total_pages > 0) $page = $total_pages;
+    }
 }
 
 $result = $conn->query($sql);
@@ -45,7 +69,75 @@ if ($selected_role === 'teacher') {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link rel="stylesheet" href="admin_account.css" />
     <link rel="icon" type="image/x-icon" href="./img/logo.jpg">
+    <style>
+        /* Pagination Styles */
+        .pagination-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 18px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
 
+        .pagination-info {
+            font-size: 13px;
+            color: #555;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .pagination li a,
+        .pagination li span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 34px;
+            height: 34px;
+            padding: 0 8px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            background: #fff;
+            color: #333;
+            font-size: 13px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
+        }
+
+        .pagination li a:hover {
+            background: #e8f5e9;
+            border-color: #2e7d32;
+            color: #2e7d32;
+        }
+
+        .pagination li.active span {
+            background: #2e7d32;
+            border-color: #2e7d32;
+            color: #fff;
+            font-weight: bold;
+            cursor: default;
+        }
+
+        .pagination li.disabled span {
+            background: #f5f5f5;
+            border-color: #e0e0e0;
+            color: #aaa;
+            cursor: not-allowed;
+        }
+
+        /* Hide pagination when search is active */
+        .pagination-wrapper.hidden {
+            display: none;
+        }
+    </style>
 </head>
 
 <body>
@@ -65,13 +157,11 @@ if ($selected_role === 'teacher') {
                 <li><a href="admin.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                 <li><a href="admin_announcements.php"><i class="fas fa-bullhorn"></i> Announcements</a></li>
 
-
                 <li class="dropdown <?= ($selected_role == 'student' || $selected_role == 'teacher') ? 'open' : '' ?>">
                     <a href="#" class="dropdown-toggle">
                         <i class="fas fa-users"></i> Accounts
                         <i class="fas fa-caret-down arrow"></i>
                     </a>
-
                     <ul class="dropdown-menu">
                         <li><a href="admin_account.php?role=student" <?= $selected_role == 'student' ? 'class="active"' : '' ?>><i class="fas fa-user-graduate"></i> Student</a></li>
                         <li><a href="admin_account.php?role=teacher" <?= $selected_role == 'teacher' ? 'class="active"' : '' ?>><i class="fas fa-chalkboard-teacher"></i> Teacher</a></li>
@@ -84,7 +174,6 @@ if ($selected_role === 'teacher') {
                 <li><a href="logout.php" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </aside>
-
 
         <div id="sidebarOverlay"></div>
 
@@ -100,8 +189,6 @@ if ($selected_role === 'teacher') {
                     <input type="text" id="search" placeholder="Search accounts..." />
                 </div>
             </div>
-
-
 
             <?php if ($selected_role === 'teacher'): ?>
                 <div id="addTeacherModal" class="modal">
@@ -146,8 +233,7 @@ if ($selected_role === 'teacher') {
                                     <?php endif; ?>
                                 </td>
                                 <td><?= htmlspecialchars($row['student_id']); ?></td>
-                                <td><?= htmlspecialchars($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']); ?>
-                                </td>
+                                <td><?= htmlspecialchars($row['first_name'] . ' ' . $row['middle_name'] . ' ' . $row['last_name']); ?></td>
                                 <td>
                                     <?php
                                     $user = $conn->query("SELECT password FROM users WHERE username = '" . $row['student_id'] . "' LIMIT 1");
@@ -163,31 +249,81 @@ if ($selected_role === 'teacher') {
                                         onclick="openViewModal('<?= htmlspecialchars($row['student_id']); ?>', '<?= $selected_role ?>')">
                                         <i class="fa fa-eye"></i>
                                     </button>
-
                                     <button class="btn-change"
                                         onclick="openModal('<?= htmlspecialchars($row['student_id']); ?>')">
                                         <i class="fa fa-pencil-alt"></i>
                                     </button>
-
-
                                 </td>
-
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="6" style="text-align:center;">No accounts found.</td>
+                            <td colspan="5" style="text-align:center;">No accounts found.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
             </table>
+
+            <!-- Pagination -->
+            <div class="pagination-wrapper" id="paginationWrapper">
+                <ul class="pagination">
+                    <!-- Previous -->
+                    <li class="<?= $page <= 1 ? 'disabled' : '' ?>">
+                        <?php if ($page <= 1): ?>
+                            <span><i class="fas fa-chevron-left"></i></span>
+                        <?php else: ?>
+                            <a href="admin_account.php?role=<?= $selected_role ?>&page=<?= $page - 1 ?>"><i class="fas fa-chevron-left"></i></a>
+                        <?php endif; ?>
+                    </li>
+
+                    <?php
+                    // Show a window of pages around the current page
+                    $window = 2;
+                    $start_page = max(1, $page - $window);
+                    $end_page   = min($total_pages, $page + $window);
+
+                    if ($start_page > 1): ?>
+                        <li><a href="admin_account.php?role=<?= $selected_role ?>&page=1">1</a></li>
+                        <?php if ($start_page > 2): ?>
+                            <li class="disabled"><span>&hellip;</span></li>
+                        <?php endif; ?>
+                    <?php endif; ?>
+
+                    <?php for ($i = $start_page; $i <= $end_page; $i++): ?>
+                        <li class="<?= $i === $page ? 'active' : '' ?>">
+                            <?php if ($i === $page): ?>
+                                <span><?= $i ?></span>
+                            <?php else: ?>
+                                <a href="admin_account.php?role=<?= $selected_role ?>&page=<?= $i ?>"><?= $i ?></a>
+                            <?php endif; ?>
+                        </li>
+                    <?php endfor; ?>
+
+                    <?php if ($end_page < $total_pages): ?>
+                        <?php if ($end_page < $total_pages - 1): ?>
+                            <li class="disabled"><span>&hellip;</span></li>
+                        <?php endif; ?>
+                        <li><a href="admin_account.php?role=<?= $selected_role ?>&page=<?= $total_pages ?>"><?= $total_pages ?></a></li>
+                    <?php endif; ?>
+
+                    <!-- Next -->
+                    <li class="<?= $page >= $total_pages ? 'disabled' : '' ?>">
+                        <?php if ($page >= $total_pages): ?>
+                            <span><i class="fas fa-chevron-right"></i></span>
+                        <?php else: ?>
+                            <a href="admin_account.php?role=<?= $selected_role ?>&page=<?= $page + 1 ?>"><i class="fas fa-chevron-right"></i></a>
+                        <?php endif; ?>
+                    </li>
+                </ul>
+            </div>
+            <!-- End Pagination -->
+
         </main>
     </div>
 
     <div id="passwordModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
-
             <h3>Change Password</h3>
             <form id="passwordForm" method="POST" action="update_password.php">
                 <input type="hidden" name="student_id" id="modal_student_id" />
@@ -197,6 +333,7 @@ if ($selected_role === 'teacher') {
             </form>
         </div>
     </div>
+
     <div id="viewModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeViewModal()">&times;</span>
@@ -206,8 +343,6 @@ if ($selected_role === 'teacher') {
             </div>
         </div>
     </div>
-
-
 
     <script>
         function openModal(studentId) {
@@ -232,18 +367,28 @@ if ($selected_role === 'teacher') {
                 e.preventDefault();
                 const parent = this.parentElement;
                 parent.classList.toggle("open");
-
                 document.querySelectorAll(".dropdown").forEach(item => {
-                    if (item !== parent) {
-                        item.classList.remove("open");
-                    }
+                    if (item !== parent) item.classList.remove("open");
                 });
             });
         });
 
-        document.getElementById("search").addEventListener("keyup", function() {
-            let query = this.value;
+        // Search — hides pagination while active, shows it when cleared
+        const searchInput = document.getElementById("search");
+        const paginationWrapper = document.getElementById("paginationWrapper");
+
+        searchInput.addEventListener("keyup", function() {
+            let query = this.value.trim();
             let role = <?= json_encode($selected_role) ?>;
+
+            if (query.length > 0) {
+                // Hide pagination during search
+                paginationWrapper.classList.add("hidden");
+            } else {
+                // Restore pagination when search is cleared
+                paginationWrapper.classList.remove("hidden");
+            }
+
             let xhr = new XMLHttpRequest();
             xhr.open("GET", "search_accounts.php?q=" + encodeURIComponent(query) + "&role=" + encodeURIComponent(role), true);
             xhr.onload = function() {
@@ -274,7 +419,6 @@ if ($selected_role === 'teacher') {
         function openViewModal(accountId, role) {
             document.getElementById("viewModal").style.display = "block";
             document.getElementById("viewDetails").innerHTML = "<p>Loading...</p>";
-
             let xhr = new XMLHttpRequest();
             xhr.open("GET", "view_account.php?id=" + encodeURIComponent(accountId) + "&role=" + encodeURIComponent(role), true);
             xhr.onload = function() {
@@ -290,27 +434,24 @@ if ($selected_role === 'teacher') {
         function closeViewModal() {
             document.getElementById("viewModal").style.display = "none";
         }
+
+        // Inactivity logout
         (function() {
             const INACTIVITY_LIMIT = 5 * 60 * 1000;
             const WARNING_TIME = 10 * 1000;
-
-            let inactivityTimer;
-            let warningTimer;
+            let inactivityTimer, warningTimer;
 
             function resetTimer() {
                 clearTimeout(inactivityTimer);
                 clearTimeout(warningTimer);
-
                 warningTimer = setTimeout(showWarning, INACTIVITY_LIMIT - WARNING_TIME);
                 inactivityTimer = setTimeout(logoutUser, INACTIVITY_LIMIT);
             }
 
             function showWarning() {
                 if (document.getElementById('inactivityWarning')) return;
-
                 const warningDiv = document.createElement('div');
                 warningDiv.id = 'inactivityWarning';
-                cs
                 Object.assign(warningDiv.style, {
                     position: 'fixed',
                     top: '20px',
@@ -332,34 +473,19 @@ if ($selected_role === 'teacher') {
                     transition: 'opacity 0.5s ease',
                     zIndex: 10000
                 });
-
                 warningDiv.innerHTML = `
-        <strong style="font-size:16px; color:#1b5e20;">Inactivity Warning</strong>
-        <span>You have been inactive. You will be logged out in <span id="countdown">10</span> seconds.</span>
-        <button id="stayLoggedIn" style="
-            padding:8px 12px;
-            background:#2e7d32;
-            color:white;
-            border:none;
-            border-radius:6px;
-            font-weight:bold;
-            cursor:pointer;
-            align-self:flex-end;
-            transition: background 0.3s;
-        ">Stay Logged In</button>
-    `;
-
+                    <strong style="font-size:16px; color:#1b5e20;">Inactivity Warning</strong>
+                    <span>You have been inactive. You will be logged out in <span id="countdown">10</span> seconds.</span>
+                    <button id="stayLoggedIn" style="padding:8px 12px;background:#2e7d32;color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;align-self:flex-end;transition:background 0.3s;">Stay Logged In</button>
+                `;
                 document.body.appendChild(warningDiv);
-
                 setTimeout(() => warningDiv.style.opacity = 1, 10);
 
                 let countdown = 10;
                 const countdownSpan = document.getElementById('countdown');
                 const interval = setInterval(() => {
                     countdown--;
-                    if (countdown <= 0) {
-                        clearInterval(interval);
-                    }
+                    if (countdown <= 0) clearInterval(interval);
                     countdownSpan.textContent = countdown;
                 }, 1000);
 
@@ -371,7 +497,6 @@ if ($selected_role === 'teacher') {
                 });
             }
 
-
             function logoutUser() {
                 fetch('auto_logout.php', {
                         method: 'POST',
@@ -382,17 +507,14 @@ if ($selected_role === 'teacher') {
                         alert(data.message || 'You have been logged out due to inactivity.');
                         window.location.href = 'login.php';
                     })
-                    .catch(err => {
-                        console.error('Auto logout error:', err);
+                    .catch(() => {
                         window.location.href = 'login.php';
                     });
             }
 
-
             ['mousemove', 'keydown', 'mousedown', 'touchstart'].forEach(evt => {
                 document.addEventListener(evt, resetTimer);
             });
-
             resetTimer();
         })();
     </script>

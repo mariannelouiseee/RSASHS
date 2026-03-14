@@ -1,13 +1,26 @@
 <?php
 include 'connect.php';
 
-$published = [];
-$scheduled = [];
+/*
+ * DISPLAY PRIORITY
+ * 1. Published today          → 🔴 LIVE badge
+ * 2. Scheduled for later today→ 🟡 Today badge
+ * 3. Scheduled for tomorrow   → 🟠 Tomorrow badge
+ * 4. Scheduled this week      → 🔵 Coming Soon badge
+ * Hidden: anything past       → never shown
+ *
+ * Total shown: up to 5 slots, filled in priority order.
+ */
 
+$published  = [];
+$scheduled  = [];   // will carry a 'badge_type' key per row
+
+/* ── 1. Published today ─────────────────────────────────── */
 $pub_result = mysqli_query(
     $conn,
     "SELECT * FROM announcements
      WHERE status = 'published'
+       AND DATE(created_at) = CURDATE()
      ORDER BY created_at DESC
      LIMIT 5"
 );
@@ -15,16 +28,68 @@ if ($pub_result && mysqli_num_rows($pub_result) > 0) {
     $published = mysqli_fetch_all($pub_result, MYSQLI_ASSOC);
 }
 
-$sch_result = mysqli_query(
-    $conn,
-    "SELECT * FROM announcements
-     WHERE status = 'scheduled'
-       AND scheduled_at > NOW()
-     ORDER BY scheduled_at ASC
-     LIMIT 5"
-);
-if ($sch_result && mysqli_num_rows($sch_result) > 0) {
-    $scheduled = mysqli_fetch_all($sch_result, MYSQLI_ASSOC);
+$pub_count = count($published);
+$sch_limit = max(0, 5 - $pub_count);
+
+/* ── 2-4. Scheduled (later today / tomorrow / this week) ── */
+if ($sch_limit > 0) {
+    /*
+     * "This week" = within the next 7 days from now, but still in the future.
+     * We label each row server-side so the template only needs to read badge_type.
+     */
+    $sch_result = mysqli_query(
+        $conn,
+        "SELECT *,
+            CASE
+                WHEN DATE(scheduled_at) = CURDATE()
+                     AND scheduled_at > NOW()          THEN 'today'
+                WHEN DATE(scheduled_at) = DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+                                                       THEN 'tomorrow'
+                WHEN scheduled_at > NOW()
+                     AND scheduled_at <= DATE_ADD(NOW(), INTERVAL 7 DAY)
+                                                       THEN 'soon'
+                ELSE 'hidden'
+            END AS badge_type
+         FROM announcements
+         WHERE status = 'scheduled'
+           AND scheduled_at > NOW()
+           AND scheduled_at <= DATE_ADD(NOW(), INTERVAL 7 DAY)
+         ORDER BY scheduled_at ASC
+         LIMIT {$sch_limit}"
+    );
+    if ($sch_result && mysqli_num_rows($sch_result) > 0) {
+        foreach (mysqli_fetch_all($sch_result, MYSQLI_ASSOC) as $row) {
+            if ($row['badge_type'] !== 'hidden') {
+                $scheduled[] = $row;
+            }
+        }
+    }
+}
+
+/* ── Badge helpers ─────────────────────────────────────── */
+function pubBadge(int $idx): string
+{
+    // Only the very first slide (latest) gets the LIVE badge on published items
+    if ($idx === 0) {
+        return '<span class="feat-badge feat-badge--live">
+                    <i class="fas fa-circle blink"></i> LIVE
+                </span>';
+    }
+    return '';
+}
+
+function schBadgeHtml(string $type): string
+{
+    $map = [
+        'today'    => ['class' => 'badge-today',    'icon' => 'fas fa-bolt',          'label' => 'Today'],
+        'tomorrow' => ['class' => 'badge-tomorrow',  'icon' => 'fas fa-sun',           'label' => 'Tomorrow'],
+        'soon'     => ['class' => 'badge-soon',      'icon' => 'fas fa-calendar-check', 'label' => 'Coming Soon'],
+    ];
+    if (!isset($map[$type])) return '';
+    $b = $map[$type];
+    return '<span class="sch-badge ' . $b['class'] . '">
+                <i class="' . $b['icon'] . '"></i> ' . $b['label'] . '
+            </span>';
 }
 ?>
 <!DOCTYPE html>
@@ -37,6 +102,132 @@ if ($sch_result && mysqli_num_rows($sch_result) > 0) {
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ── Priority Badges ───────────────────────────────── */
+
+        /* Base: reuse .feat-badge from style.css, extend below */
+        .feat-badge--live {
+            background: #c0392b;
+            box-shadow: 0 4px 16px rgba(192, 57, 43, 0.5);
+        }
+
+        .feat-badge--live .blink {
+            font-size: 0.55rem;
+            animation: blink 1.1s step-start infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* Scheduled item badges (inside .sch-card) */
+        .sch-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 10px;
+        }
+
+        .badge-today {
+            background: #fff9c4;
+            color: #f57f17;
+            border: 1px solid #ffe082;
+            box-shadow: 0 2px 8px rgba(245, 127, 23, 0.22);
+        }
+
+        .badge-tomorrow {
+            background: #fff3e0;
+            color: #e65100;
+            border: 1px solid #ffcc80;
+            box-shadow: 0 2px 8px rgba(230, 81, 0, 0.18);
+        }
+
+        .badge-soon {
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #90caf9;
+            box-shadow: 0 2px 8px rgba(21, 101, 192, 0.18);
+        }
+
+        /* Dot colours per badge type */
+        .sch-item[data-badge="today"] .sch-dot {
+            background: #f57f17;
+            box-shadow: 0 0 0 2px #f57f17;
+        }
+
+        .sch-item[data-badge="tomorrow"] .sch-dot {
+            background: #e65100;
+            box-shadow: 0 0 0 2px #e65100;
+        }
+
+        .sch-item[data-badge="soon"] .sch-dot {
+            background: #1565c0;
+            box-shadow: 0 0 0 2px #1565c0;
+        }
+
+        /* Card left-border colours per badge type */
+        .sch-item[data-badge="today"] .sch-card::before {
+            background: linear-gradient(to bottom, #f57f17, #ffe082);
+        }
+
+        .sch-item[data-badge="tomorrow"] .sch-card::before {
+            background: linear-gradient(to bottom, #e65100, #ffb74d);
+        }
+
+        .sch-item[data-badge="soon"] .sch-card::before {
+            background: linear-gradient(to bottom, #1565c0, #90caf9);
+        }
+
+        .sch-item[data-badge="today"] .sch-card {
+            border-color: #ffe082;
+        }
+
+        .sch-item[data-badge="tomorrow"] .sch-card {
+            border-color: #ffcc80;
+        }
+
+        .sch-item[data-badge="soon"] .sch-card {
+            border-color: #90caf9;
+        }
+
+        /* Tab badge colours */
+        .ann-tab-btn.sched-tab .badge {
+            transition: background 0.24s;
+        }
+
+        /* Countdown chip colour variants */
+        .sch-item[data-badge="today"] .countdown-chip {
+            color: #f57f17;
+            background: #fff9c4;
+            border-color: rgba(245, 127, 23, .18);
+        }
+
+        .sch-item[data-badge="tomorrow"] .countdown-chip {
+            color: #e65100;
+            background: #fff3e0;
+            border-color: rgba(230, 81, 0, .18);
+        }
+
+        .sch-item[data-badge="soon"] .countdown-chip {
+            color: #1565c0;
+            background: #e3f2fd;
+            border-color: rgba(21, 101, 192, .18);
+        }
+    </style>
 </head>
 
 <body>
@@ -55,14 +246,11 @@ if ($sch_result && mysqli_num_rows($sch_result) > 0) {
             <p>Stay informed with the latest announcements, events, and upcoming activities from RSASHS.</p>
         </div>
 
-        <div class="ann-tabs">
-            <?php if (!empty($scheduled)): ?>
-                <button class="ann-tab-btn sched-tab" data-panel="scheduled">
-                    <i class="fas fa-clock"></i> Upcoming
-                    <span class="badge"><?= count($scheduled) ?></span>
-                </button>
-            <?php endif; ?>
-        </div>
+        <?php if (!empty($scheduled)): ?>
+            <div class="ann-panel" id="panel-scheduled">
+                ...
+            </div>
+        <?php endif; ?>
 
         <!-- ── PUBLISHED PANEL ── -->
         <div class="ann-panel active" id="panel-published">
@@ -91,13 +279,6 @@ if ($sch_result && mysqli_num_rows($sch_result) > 0) {
                             ?>
                                 <div class="pub-slide <?= $idx === 0 ? 'is-active' : '' ?>"
                                     onclick="openModal(<?= $modalData ?>)">
-
-                                    <?php if ($idx === 0): ?>
-                                        <span class="feat-badge">
-                                            <i class="fas fa-star"></i> Latest
-                                        </span>
-                                    <?php endif; ?>
-
                                     <span class="pub-slide-num"><?= $idx + 1 ?> / <?= count($published) ?></span>
 
                                     <div class="pub-slide-inner">
@@ -181,22 +362,30 @@ if ($sch_result && mysqli_num_rows($sch_result) > 0) {
             <div class="ann-panel" id="panel-scheduled">
                 <div class="sch-layout">
                     <?php foreach ($scheduled as $ann):
-                        $ts  = strtotime($ann['scheduled_at']);
-                        $now = time();
-                        $diff = $ts - $now;
-                        $days = floor($diff / 86400);
-                        $hrs  = floor(($diff % 86400) / 3600);
-                        if ($days > 0)      $countdown = "in {$days}d {$hrs}h";
-                        elseif ($hrs > 0)   $countdown = "in {$hrs}h";
-                        else                $countdown = "very soon";
+                        $ts        = strtotime($ann['scheduled_at']);
+                        $now       = time();
+                        $diff      = $ts - $now;
+                        $days      = floor($diff / 86400);
+                        $hrs       = floor(($diff % 86400) / 3600);
+                        $mins      = floor(($diff % 3600) / 60);
+                        $badgeType = $ann['badge_type'];   // 'today' | 'tomorrow' | 'soon'
+
+                        if ($badgeType === 'today') {
+                            $countdown = $hrs > 0 ? "in {$hrs}h {$mins}m" : "in {$mins}m";
+                        } elseif ($badgeType === 'tomorrow') {
+                            $countdown = "tomorrow at " . date('g:i A', $ts);
+                        } else {
+                            $countdown = $days > 0 ? "in {$days}d {$hrs}h" : "in {$hrs}h";
+                        }
                     ?>
-                        <div class="sch-item" onclick="openModal(<?= htmlspecialchars(json_encode([
-                                                                        'title'   => $ann['title'],
-                                                                        'message' => $ann['message'],
-                                                                        'date'    => date('F d, Y · g:i A', $ts),
-                                                                        'time'    => '',
-                                                                        'image'   => !empty($ann['image']) ? 'uploads/' . $ann['image'] : './img/announcement.png',
-                                                                    ]), ENT_QUOTES) ?>)">
+                        <div class="sch-item" data-badge="<?= htmlspecialchars($badgeType) ?>"
+                            onclick="openModal(<?= htmlspecialchars(json_encode([
+                                                    'title'   => $ann['title'],
+                                                    'message' => $ann['message'],
+                                                    'date'    => date('F d, Y · g:i A', $ts),
+                                                    'time'    => '',
+                                                    'image'   => !empty($ann['image']) ? 'uploads/' . $ann['image'] : './img/announcement.png',
+                                                ]), ENT_QUOTES) ?>)">
                             <div class="sch-dot-wrap">
                                 <div class="sch-dot"></div>
                             </div>
@@ -206,6 +395,10 @@ if ($sch_result && mysqli_num_rows($sch_result) > 0) {
                                 <?php else: ?>
                                     <img class="sch-img" src="./img/announcement.png" alt="Announcement">
                                 <?php endif; ?>
+
+                                <!-- Priority badge -->
+                                <?= schBadgeHtml($badgeType) ?>
+
                                 <div class="sch-when">
                                     <i class="fas fa-clock"></i>
                                     <?= date('M d, Y · g:i A', $ts) ?>

@@ -14,7 +14,6 @@ addLog($conn, $_SESSION['admin_id'], 'admin', "Visited Manage Subjects page");
 
 $success = $error = "";
 
-// Log admin action helper
 function logAction($conn, $message)
 {
     if (isset($_SESSION['admin_id'])) {
@@ -22,7 +21,7 @@ function logAction($conn, $message)
     }
 }
 
-// Fetch teachers once into an array to reuse safely in multiple selects
+// Fetch teachers
 $teacher_list = [];
 $teachers_result = $conn->query("SELECT teacher_id, first_name, last_name FROM teachers ORDER BY last_name ASC");
 if ($teachers_result) {
@@ -35,9 +34,9 @@ if ($teachers_result) {
 // Handle adding subject
 if (isset($_POST['add_subject'])) {
     $subject_name = trim($_POST['subject_name'] ?? '');
-    $teacher_id = trim($_POST['teacher_id'] ?? '');
-    $category = trim($_POST['category'] ?? '');
-    $semester = trim($_POST['semester'] ?? '');
+    $teacher_id   = trim($_POST['teacher_id']   ?? '');
+    $category     = trim($_POST['category']      ?? '');
+    $semester     = trim($_POST['semester']      ?? '');
 
     if ($subject_name && $teacher_id && $category && $semester) {
         $stmt = $conn->prepare("INSERT INTO subjects (subject_name, teacher_id, category, semester) VALUES (?, ?, ?, ?)");
@@ -80,13 +79,13 @@ if (isset($_POST['delete_subject'])) {
     }
 }
 
-// Handle edit (update) subject
+// Handle edit subject
 if (isset($_POST['edit_subject'])) {
-    $subject_id = intval($_POST['subject_id'] ?? 0);
-    $subject_name = trim($_POST['subject_name'] ?? '');
-    $teacher_id = trim($_POST['teacher_id'] ?? '');
-    $category = trim($_POST['category'] ?? '');
-    $semester = trim($_POST['semester'] ?? '');
+    $subject_id   = intval($_POST['subject_id']   ?? 0);
+    $subject_name = trim($_POST['subject_name']    ?? '');
+    $teacher_id   = trim($_POST['teacher_id']      ?? '');
+    $category     = trim($_POST['category']        ?? '');
+    $semester     = trim($_POST['semester']        ?? '');
 
     if ($subject_id && $subject_name && $teacher_id && $category && $semester) {
         $stmt = $conn->prepare("UPDATE subjects SET subject_name = ?, teacher_id = ?, category = ?, semester = ? WHERE subject_id = ?");
@@ -107,32 +106,118 @@ if (isset($_POST['edit_subject'])) {
     }
 }
 
-// Fetch subjects with optional filter by teacher
+// Pagination settings
+$records_per_page = 10;
+
+// Per-semester page params
+$page_sem1 = isset($_GET['page_sem1']) && is_numeric($_GET['page_sem1']) ? max(1, (int)$_GET['page_sem1']) : 1;
+$page_sem2 = isset($_GET['page_sem2']) && is_numeric($_GET['page_sem2']) ? max(1, (int)$_GET['page_sem2']) : 1;
+
 $filter_teacher = $_GET['filter_teacher'] ?? '';
-if (!empty($filter_teacher)) {
-    $stmt = $conn->prepare("
-        SELECT s.subject_id, s.subject_name, s.teacher_id, s.category, s.semester, t.first_name, t.last_name
-        FROM subjects s
-        LEFT JOIN teachers t ON s.teacher_id = t.teacher_id
-        WHERE s.teacher_id = ?
-        ORDER BY s.subject_name ASC
-    ");
-    if ($stmt) {
-        $stmt->bind_param("s", $filter_teacher);
-        $stmt->execute();
-        $subjects = $stmt->get_result();
-        $stmt->close();
+
+// Helper: build paginated query for a semester
+function fetchSemesterSubjects($conn, $semester, $filter_teacher, $page, $records_per_page)
+{
+    $offset = ($page - 1) * $records_per_page;
+
+    if (!empty($filter_teacher)) {
+        $count_stmt = $conn->prepare("SELECT COUNT(*) AS total FROM subjects s WHERE s.semester = ? AND s.teacher_id = ?");
+        $count_stmt->bind_param("ss", $semester, $filter_teacher);
+        $count_stmt->execute();
+        $total = (int)$count_stmt->get_result()->fetch_assoc()['total'];
+        $count_stmt->close();
+
+        $stmt = $conn->prepare("
+            SELECT s.subject_id, s.subject_name, s.teacher_id, s.category, s.semester,
+                   t.first_name, t.last_name
+            FROM subjects s
+            LEFT JOIN teachers t ON s.teacher_id = t.teacher_id
+            WHERE s.semester = ? AND s.teacher_id = ?
+            ORDER BY s.subject_name ASC
+            LIMIT ? OFFSET ?
+        ");
+        $stmt->bind_param("ssii", $semester, $filter_teacher, $records_per_page, $offset);
     } else {
-        // fallback: empty result set
-        $subjects = $conn->query("SELECT s.subject_id, s.subject_name, s.teacher_id, s.category, s.semester, t.first_name, t.last_name FROM subjects s LEFT JOIN teachers t ON s.teacher_id = t.teacher_id WHERE 0");
+        $count_stmt = $conn->prepare("SELECT COUNT(*) AS total FROM subjects s WHERE s.semester = ?");
+        $count_stmt->bind_param("s", $semester);
+        $count_stmt->execute();
+        $total = (int)$count_stmt->get_result()->fetch_assoc()['total'];
+        $count_stmt->close();
+
+        $stmt = $conn->prepare("
+            SELECT s.subject_id, s.subject_name, s.teacher_id, s.category, s.semester,
+                   t.first_name, t.last_name
+            FROM subjects s
+            LEFT JOIN teachers t ON s.teacher_id = t.teacher_id
+            WHERE s.semester = ?
+            ORDER BY s.subject_name ASC
+            LIMIT ? OFFSET ?
+        ");
+        $stmt->bind_param("sii", $semester, $records_per_page, $offset);
     }
-} else {
-    $subjects = $conn->query("
-        SELECT s.subject_id, s.subject_name, s.teacher_id, s.category, s.semester, t.first_name, t.last_name
-        FROM subjects s
-        LEFT JOIN teachers t ON s.teacher_id = t.teacher_id
-        ORDER BY s.subject_name ASC
-    ");
+
+    $stmt->execute();
+    $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+
+    $total_pages = $total > 0 ? ceil($total / $records_per_page) : 1;
+    return ['rows' => $rows, 'total' => $total, 'total_pages' => $total_pages];
+}
+
+$sem1_data = fetchSemesterSubjects($conn, '1st Semester', $filter_teacher, $page_sem1, $records_per_page);
+$sem2_data = fetchSemesterSubjects($conn, '2nd Semester', $filter_teacher, $page_sem2, $records_per_page);
+
+// Build pagination URL preserving all GET params except the target page param
+function paginationUrl($param, $page, $extras = [])
+{
+    $params = array_merge($_GET, $extras, [$param => $page]);
+    return '?' . http_build_query($params);
+}
+
+// Render pagination HTML
+function renderPagination($current_page, $total_pages, $param, $extras = [])
+{
+    if ($total_pages <= 1) return '';
+    $window = 2;
+    $start  = max(1, $current_page - $window);
+    $end    = min($total_pages, $current_page + $window);
+
+    $html = '<div class="pagination-wrapper"><ul class="pagination">';
+
+    // Prev
+    if ($current_page <= 1) {
+        $html .= '<li class="disabled"><span><i class="fas fa-chevron-left"></i></span></li>';
+    } else {
+        $html .= '<li><a href="' . paginationUrl($param, $current_page - 1, $extras) . '"><i class="fas fa-chevron-left"></i></a></li>';
+    }
+
+    if ($start > 1) {
+        $html .= '<li><a href="' . paginationUrl($param, 1, $extras) . '">1</a></li>';
+        if ($start > 2) $html .= '<li class="disabled"><span>&hellip;</span></li>';
+    }
+
+    for ($i = $start; $i <= $end; $i++) {
+        if ($i === $current_page) {
+            $html .= '<li class="active"><span>' . $i . '</span></li>';
+        } else {
+            $html .= '<li><a href="' . paginationUrl($param, $i, $extras) . '">' . $i . '</a></li>';
+        }
+    }
+
+    if ($end < $total_pages) {
+        if ($end < $total_pages - 1) $html .= '<li class="disabled"><span>&hellip;</span></li>';
+        $html .= '<li><a href="' . paginationUrl($param, $total_pages, $extras) . '">' . $total_pages . '</a></li>';
+    }
+
+    // Next
+    if ($current_page >= $total_pages) {
+        $html .= '<li class="disabled"><span><i class="fas fa-chevron-right"></i></span></li>';
+    } else {
+        $html .= '<li><a href="' . paginationUrl($param, $current_page + 1, $extras) . '"><i class="fas fa-chevron-right"></i></a></li>';
+    }
+
+    $html .= '</ul></div>';
+    return $html;
 }
 ?>
 <!DOCTYPE html>
@@ -145,7 +230,106 @@ if (!empty($filter_teacher)) {
     <link rel="stylesheet" href="admin_account.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link rel="icon" type="image/x-icon" href="./img/logo.jpg">
+    <style>
+        /* Tab Styles */
+        .tab-wrapper {
+            display: flex;
+            gap: 0;
+            margin-top: 20px;
+            border-bottom: 2px solid #2e7d32;
+        }
 
+        .tab-btn {
+            padding: 10px 28px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #555;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .tab-btn:hover {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .tab-btn.active {
+            background: #2e7d32;
+            color: #fff;
+            border-color: #2e7d32;
+        }
+
+        .tab-panel {
+            display: none;
+            padding-top: 20px;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* Pagination Styles */
+        .pagination-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 18px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .pagination li a,
+        .pagination li span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 34px;
+            height: 34px;
+            padding: 0 8px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            background: #fff;
+            color: #333;
+            font-size: 13px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
+        }
+
+        .pagination li a:hover {
+            background: #e8f5e9;
+            border-color: #2e7d32;
+            color: #2e7d32;
+        }
+
+        .pagination li.active span {
+            background: #2e7d32;
+            border-color: #2e7d32;
+            color: #fff;
+            font-weight: bold;
+            cursor: default;
+        }
+
+        .pagination li.disabled span {
+            background: #f5f5f5;
+            border-color: #e0e0e0;
+            color: #aaa;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
 
 <body>
@@ -164,7 +348,6 @@ if (!empty($filter_teacher)) {
             <ul>
                 <li><a href="admin.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                 <li><a href="admin_announcements.php"><i class="fas fa-bullhorn"></i> Announcements</a></li>
-
                 <li class="dropdown">
                     <a href="#" class="dropdown-toggle"><i class="fas fa-users"></i> Accounts <i class="fas fa-caret-down arrow"></i></a>
                     <ul class="dropdown-menu">
@@ -210,7 +393,6 @@ if (!empty($filter_teacher)) {
                     <option value="">-- Select Semester --</option>
                     <option value="1st Semester">1st Semester</option>
                     <option value="2nd Semester">2nd Semester</option>
-
                 </select>
                 <button type="submit" name="add_subject" class="btn-add">Add Subject</button>
             </form>
@@ -230,18 +412,14 @@ if (!empty($filter_teacher)) {
                 </select>
             </form>
 
-            <?php
-            $semesters = ['1st Semester', '2nd Semester'];
-            foreach ($semesters as $sem):
-                $filtered = [];
-                if ($subjects) {
-                    mysqli_data_seek($subjects, 0);
-                    while ($row = $subjects->fetch_assoc()) {
-                        if ($row['semester'] === $sem) $filtered[] = $row;
-                    }
-                }
-            ?>
-                <h2><?= htmlspecialchars($sem) ?></h2>
+            <!-- TABS -->
+            <div class="tab-wrapper">
+                <button class="tab-btn active" onclick="switchTab('sem1', this)">1st Semester</button>
+                <button class="tab-btn" onclick="switchTab('sem2', this)">2nd Semester</button>
+            </div>
+
+            <!-- 1ST SEMESTER TAB -->
+            <div class="tab-panel active" id="tab-sem1">
                 <table>
                     <thead>
                         <tr>
@@ -252,8 +430,8 @@ if (!empty($filter_teacher)) {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (!empty($filtered)):
-                            foreach ($filtered as $row): ?>
+                        <?php if (!empty($sem1_data['rows'])): ?>
+                            <?php foreach ($sem1_data['rows'] as $row): ?>
                                 <tr data-subject='<?= json_encode($row, JSON_HEX_APOS | JSON_HEX_QUOT) ?>'>
                                     <td><?= htmlspecialchars($row['subject_name']) ?></td>
                                     <td><?= htmlspecialchars($row['last_name'] . ", " . $row['first_name']) ?></td>
@@ -267,19 +445,60 @@ if (!empty($filter_teacher)) {
                                             <button type="submit" name="delete_subject" class="btn-del" title="Delete">
                                                 <i class="fa-solid fa-trash"></i>
                                             </button>
-
                                         </form>
                                     </td>
                                 </tr>
-                            <?php endforeach;
-                        else: ?>
+                            <?php endforeach; ?>
+                        <?php else: ?>
                             <tr>
                                 <td colspan="4" style="text-align:center;">No subjects.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
-            <?php endforeach; ?>
+                <?= renderPagination($page_sem1, $sem1_data['total_pages'], 'page_sem1') ?>
+            </div>
+
+            <!-- 2ND SEMESTER TAB -->
+            <div class="tab-panel" id="tab-sem2">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Subject Name</th>
+                            <th>Assigned Teacher</th>
+                            <th>Category</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (!empty($sem2_data['rows'])): ?>
+                            <?php foreach ($sem2_data['rows'] as $row): ?>
+                                <tr data-subject='<?= json_encode($row, JSON_HEX_APOS | JSON_HEX_QUOT) ?>'>
+                                    <td><?= htmlspecialchars($row['subject_name']) ?></td>
+                                    <td><?= htmlspecialchars($row['last_name'] . ", " . $row['first_name']) ?></td>
+                                    <td><?= htmlspecialchars($row['category']) ?></td>
+                                    <td>
+                                        <button class="btn-change btn-edit" type="button" title="Edit">
+                                            <i class="fa fa-pencil-alt"></i>
+                                        </button>
+                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this subject?');">
+                                            <input type="hidden" name="subject_id" value="<?= (int)$row['subject_id'] ?>">
+                                            <button type="submit" name="delete_subject" class="btn-del" title="Delete">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="4" style="text-align:center;">No subjects.</td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+                <?= renderPagination($page_sem2, $sem2_data['total_pages'], 'page_sem2') ?>
+            </div>
 
         </main>
     </div>
@@ -313,7 +532,6 @@ if (!empty($filter_teacher)) {
                     <option value="">-- Select Semester --</option>
                     <option value="1st Semester">1st Semester</option>
                     <option value="2nd Semester">2nd Semester</option>
-
                 </select>
                 <button type="submit" name="edit_subject" class="btn-add" style="margin-top:10px;">Save Changes</button>
             </form>
@@ -321,6 +539,14 @@ if (!empty($filter_teacher)) {
     </div>
 
     <script>
+        // Tab switching
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tabId).classList.add('active');
+            btn.classList.add('active');
+        }
+
         // Sidebar toggle
         const sidebar = document.querySelector('.sidebar');
         const sidebarToggle = document.getElementById('sidebarToggle');
@@ -353,7 +579,6 @@ if (!empty($filter_teacher)) {
 
         // Edit modal
         const editModal = document.getElementById('editModal');
-        const modalClose = editModal.querySelector('.close');
 
         function openEditModalWithData(data) {
             document.getElementById('edit_subject_id').value = data.subject_id || '';
@@ -370,8 +595,7 @@ if (!empty($filter_teacher)) {
                 const tr = button.closest('tr');
                 const raw = tr.getAttribute('data-subject');
                 try {
-                    const data = JSON.parse(raw);
-                    openEditModalWithData(data);
+                    openEditModalWithData(JSON.parse(raw));
                 } catch (err) {
                     alert('Could not parse subject data for editing.');
                     console.error(err);
@@ -379,15 +603,9 @@ if (!empty($filter_teacher)) {
             });
         });
 
-        modalClose.addEventListener('click', () => {
-            editModal.style.display = 'none';
-            editModal.setAttribute('aria-hidden', 'true');
-        });
+        editModal.querySelector('.close').addEventListener('click', () => closeEditModal());
         window.addEventListener('click', (e) => {
-            if (e.target === editModal) {
-                editModal.style.display = 'none';
-                editModal.setAttribute('aria-hidden', 'true');
-            }
+            if (e.target === editModal) closeEditModal();
         });
 
         function closeEditModal() {
@@ -395,31 +613,23 @@ if (!empty($filter_teacher)) {
             editModal.setAttribute('aria-hidden', 'true');
         }
 
+        // Inactivity logout
         (function() {
             const INACTIVITY_LIMIT = 5 * 60 * 1000;
             const WARNING_TIME = 10 * 1000;
-
-            let inactivityTimer;
-            let warningTimer;
+            let inactivityTimer, warningTimer;
 
             function resetTimer() {
                 clearTimeout(inactivityTimer);
                 clearTimeout(warningTimer);
-
-
                 warningTimer = setTimeout(showWarning, INACTIVITY_LIMIT - WARNING_TIME);
-
                 inactivityTimer = setTimeout(logoutUser, INACTIVITY_LIMIT);
             }
 
             function showWarning() {
-
                 if (document.getElementById('inactivityWarning')) return;
-
                 const warningDiv = document.createElement('div');
                 warningDiv.id = 'inactivityWarning';
-
-
                 Object.assign(warningDiv.style, {
                     position: 'fixed',
                     top: '20px',
@@ -441,34 +651,19 @@ if (!empty($filter_teacher)) {
                     transition: 'opacity 0.5s ease',
                     zIndex: 10000
                 });
-
                 warningDiv.innerHTML = `
-        <strong style="font-size:16px; color:#1b5e20;">Inactivity Warning</strong>
-        <span>You have been inactive. You will be logged out in <span id="countdown">10</span> seconds.</span>
-        <button id="stayLoggedIn" style="
-            padding:8px 12px;
-            background:#2e7d32;
-            color:white;
-            border:none;
-            border-radius:6px;
-            font-weight:bold;
-            cursor:pointer;
-            align-self:flex-end;
-            transition: background 0.3s;
-        ">Stay Logged In</button>
-    `;
-
+                    <strong style="font-size:16px; color:#1b5e20;">Inactivity Warning</strong>
+                    <span>You have been inactive. You will be logged out in <span id="countdown">10</span> seconds.</span>
+                    <button id="stayLoggedIn" style="padding:8px 12px;background:#2e7d32;color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;align-self:flex-end;">Stay Logged In</button>
+                `;
                 document.body.appendChild(warningDiv);
-
                 setTimeout(() => warningDiv.style.opacity = 1, 10);
 
                 let countdown = 10;
                 const countdownSpan = document.getElementById('countdown');
                 const interval = setInterval(() => {
                     countdown--;
-                    if (countdown <= 0) {
-                        clearInterval(interval);
-                    }
+                    if (countdown <= 0) clearInterval(interval);
                     countdownSpan.textContent = countdown;
                 }, 1000);
 
@@ -480,7 +675,6 @@ if (!empty($filter_teacher)) {
                 });
             }
 
-
             function logoutUser() {
                 fetch('auto_logout.php', {
                         method: 'POST',
@@ -491,8 +685,7 @@ if (!empty($filter_teacher)) {
                         alert(data.message || 'You have been logged out due to inactivity.');
                         window.location.href = 'login.php';
                     })
-                    .catch(err => {
-                        console.error('Auto logout error:', err);
+                    .catch(() => {
                         window.location.href = 'login.php';
                     });
             }
@@ -500,7 +693,6 @@ if (!empty($filter_teacher)) {
             ['mousemove', 'keydown', 'mousedown', 'touchstart'].forEach(evt => {
                 document.addEventListener(evt, resetTimer);
             });
-
             resetTimer();
         })();
     </script>

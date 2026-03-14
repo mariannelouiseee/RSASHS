@@ -13,6 +13,25 @@ $student_id = $_SESSION['student_id'];
 // Log viewing
 addLog($conn, $student_id, 'student', 'Viewed report card');
 
+// ===== CHECK GRADE VISIBILITY FOR STUDENT'S SECTION =====
+$stmtInfo = $conn->prepare("SELECT year_level, section_name FROM students WHERE student_id = ?");
+$stmtInfo->bind_param("i", $student_id);
+$stmtInfo->execute();
+$studentInfo = $stmtInfo->get_result()->fetch_assoc();
+$stmtInfo->close();
+
+$stmtVis = $conn->prepare("
+    SELECT grades_visible FROM sections 
+    WHERE section_name = ? AND year_level = ?
+    LIMIT 1
+");
+$stmtVis->bind_param("ss", $studentInfo['section_name'], $studentInfo['year_level']);
+$stmtVis->execute();
+$visRow = $stmtVis->get_result()->fetch_assoc();
+$stmtVis->close();
+
+$gradesVisible = $visRow['grades_visible'] ?? 0;
+
 // ===== FETCH ALL SCHOOL YEARS =====
 $sqlYears = "SELECT DISTINCT school_year 
              FROM grades 
@@ -111,6 +130,20 @@ $conn->close();
     <div class="profile-container">
         <h2>MY SUBJECTS & GRADES</h2>
 
+        <?php if (!$gradesVisible): ?>
+            <div style="
+                background: #fff8e1;
+                border: 1px solid #f9a825;
+                border-radius: 8px;
+                padding: 12px 18px;
+                margin-bottom: 16px;
+                color: #6d4c00;
+                font-size: 14px;
+            ">
+                🔒 Grades are currently not yet released by your adviser.
+            </div>
+        <?php endif; ?>
+
         <?php if (!empty($tables_by_year)): ?>
             <?php foreach ($tables_by_year as $school_year => $subjects_by_category): ?>
                 <h3>School Year: <?= htmlspecialchars($school_year) ?></h3>
@@ -121,35 +154,41 @@ $conn->close();
                             <tr>
                                 <th>Subject</th>
                                 <th>Teacher</th>
-                                <th>Q1</th>
-                                <th>Q2</th>
-                                <th>1st Sem Final</th>
-                                <th>GWA 1st Sem</th>
-                                <th>Q3</th>
-                                <th>Q4</th>
-                                <th>2nd Sem Final</th>
-                                <th>GWA 2nd Sem</th>
-                                <th>Final</th>
+                                <?php if ($gradesVisible): ?>
+                                    <th>Q1</th>
+                                    <th>Q2</th>
+                                    <th>1st Sem Final</th>
+                                    <th>GWA 1st Sem</th>
+                                    <th>Q3</th>
+                                    <th>Q4</th>
+                                    <th>2nd Sem Final</th>
+                                    <th>GWA 2nd Sem</th>
+                                    <th>Final</th>
+                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($subjects_by_category as $category => $subjects): ?>
                                 <tr class="category-row">
-                                    <td colspan="11"><?= htmlspecialchars($category) ?></td>
+                                    <td colspan="<?= $gradesVisible ? '11' : '2' ?>">
+                                        <?= htmlspecialchars($category) ?>
+                                    </td>
                                 </tr>
                                 <?php foreach ($subjects as $s): ?>
                                     <tr>
                                         <td><?= htmlspecialchars($s['subject_name']) ?></td>
                                         <td><?= htmlspecialchars($s['teacher_name'] ?? 'Unassigned') ?></td>
-                                        <td><?= $s['q1'] ?? '-' ?></td>
-                                        <td><?= $s['q2'] ?? '-' ?></td>
-                                        <td><?= $s['first_sem_final'] ?? '-' ?></td>
-                                        <td><?= $s['gwa_first_sem'] ?? '-' ?></td>
-                                        <td><?= $s['q3'] ?? '-' ?></td>
-                                        <td><?= $s['q4'] ?? '-' ?></td>
-                                        <td><?= $s['second_sem_final'] ?? '-' ?></td>
-                                        <td><?= $s['gwa_second_sem'] ?? '-' ?></td>
-                                        <td><?= $s['final'] ?? '-' ?></td>
+                                        <?php if ($gradesVisible): ?>
+                                            <td><?= $s['q1'] ?? '-' ?></td>
+                                            <td><?= $s['q2'] ?? '-' ?></td>
+                                            <td><?= $s['first_sem_final'] ?? '-' ?></td>
+                                            <td><?= $s['gwa_first_sem'] ?? '-' ?></td>
+                                            <td><?= $s['q3'] ?? '-' ?></td>
+                                            <td><?= $s['q4'] ?? '-' ?></td>
+                                            <td><?= $s['second_sem_final'] ?? '-' ?></td>
+                                            <td><?= $s['gwa_second_sem'] ?? '-' ?></td>
+                                            <td><?= $s['final'] ?? '-' ?></td>
+                                        <?php endif; ?>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endforeach; ?>
@@ -181,20 +220,15 @@ $conn->close();
             function resetTimer() {
                 clearTimeout(inactivityTimer);
                 clearTimeout(warningTimer);
-
-
                 warningTimer = setTimeout(showWarning, INACTIVITY_LIMIT - WARNING_TIME);
-
                 inactivityTimer = setTimeout(logoutUser, INACTIVITY_LIMIT);
             }
 
             function showWarning() {
-
                 if (document.getElementById('inactivityWarning')) return;
 
                 const warningDiv = document.createElement('div');
                 warningDiv.id = 'inactivityWarning';
-
 
                 Object.assign(warningDiv.style, {
                     position: 'fixed',
@@ -219,37 +253,31 @@ $conn->close();
                 });
 
                 warningDiv.innerHTML = `
-        <strong style="font-size:16px; color:#1b5e20;">Inactivity Warning</strong>
-        <span>You have been inactive. You will be logged out in <span id="countdown">10</span> seconds.</span>
-        <button id="stayLoggedIn" style="
-            padding:8px 12px;
-            background:#2e7d32;
-            color:white;
-            border:none;
-            border-radius:6px;
-            font-weight:bold;
-            cursor:pointer;
-            align-self:flex-end;
-            transition: background 0.3s;
-        ">Stay Logged In</button>
-    `;
+                    <strong style="font-size:16px; color:#1b5e20;">Inactivity Warning</strong>
+                    <span>You have been inactive. You will be logged out in <span id="countdown">10</span> seconds.</span>
+                    <button id="stayLoggedIn" style="
+                        padding:8px 12px;
+                        background:#2e7d32;
+                        color:white;
+                        border:none;
+                        border-radius:6px;
+                        font-weight:bold;
+                        cursor:pointer;
+                        align-self:flex-end;
+                        transition: background 0.3s;
+                    ">Stay Logged In</button>
+                `;
 
                 document.body.appendChild(warningDiv);
-
-
                 setTimeout(() => warningDiv.style.opacity = 1, 10);
-
 
                 let countdown = 10;
                 const countdownSpan = document.getElementById('countdown');
                 const interval = setInterval(() => {
                     countdown--;
-                    if (countdown <= 0) {
-                        clearInterval(interval);
-                    }
+                    if (countdown <= 0) clearInterval(interval);
                     countdownSpan.textContent = countdown;
                 }, 1000);
-
 
                 document.getElementById('stayLoggedIn').addEventListener('click', () => {
                     clearInterval(interval);
@@ -258,7 +286,6 @@ $conn->close();
                     resetTimer();
                 });
             }
-
 
             function logoutUser() {
                 fetch('auto_logout.php', {
@@ -276,11 +303,9 @@ $conn->close();
                     });
             }
 
-
             ['mousemove', 'keydown', 'mousedown', 'touchstart'].forEach(evt => {
                 document.addEventListener(evt, resetTimer);
             });
-
 
             resetTimer();
         })();
