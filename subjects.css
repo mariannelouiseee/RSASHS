@@ -6,56 +6,70 @@
 }
 
 body {
-  background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+  background: #f1f8e9;
   min-height: 100vh;
+  color: #2e3a2f;
 }
 
 html {
-  overflow-x: hidden; /* ✅ prevent horizontal scroll but allow vertical */
+  overflow-x: hidden;
 }
 
-/* ===== HEADER STYLES ===== */
+/* ===== HEADER ===== */
 header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 20px;
-  background-color: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  position: relative;
+  padding: 0 24px;
+  height: 70px;
+  background: linear-gradient(135deg, #2e7d32, #388e3c);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  position: sticky;
+  top: 0;
   z-index: 100;
 }
 
 .header-left {
   display: flex;
   align-items: center;
+  gap: 14px;
   flex: 1;
 }
 
 header img {
-  height: 60px;
-  width: 60px;
+  height: 46px;
+  width: 46px;
   border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  object-fit: cover;
 }
 
 header h2 {
-  margin-left: 20px;
   text-transform: uppercase;
-  color: #2e7d32;
-  font-size: 22px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
 }
 
 .menu-toggle {
   display: none;
-  font-size: 28px;
-  background: none;
+  font-size: 20px;
+  background: rgba(255, 255, 255, 0.15);
   border: none;
+  color: #fff;
   cursor: pointer;
-  color: #2e7d32;
-  padding: 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  transition: background 0.2s;
   z-index: 1001;
 }
 
+.menu-toggle:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ===== NAVBAR ===== */
 .navbar {
   display: flex;
   align-items: center;
@@ -64,173 +78,342 @@ header h2 {
 .navbar ul {
   display: flex;
   list-style: none;
+  gap: 4px;
   margin: 0;
   padding: 0;
-  gap: 20px;
+  align-items: center;
+  flex-direction: row;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .navbar li a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   text-decoration: none;
-  color: #2e7d32;
-  font-weight: bold;
-  padding: 8px 14px;
-  border-radius: 6px;
-  transition: background-color 0.3s, color 0.3s;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  font-size: 14px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 
 .navbar li a:hover,
 .navbar li a.active {
-  background-color: #c8e6c9;
-  color: #1b5e20;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.navbar li a.active {
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .navbar li a.logout {
-  background-color: #2e7d32;
-  color: white;
+  background: rgba(198, 40, 40, 0.75);
+  color: #fff;
 }
 
 .navbar li a.logout:hover {
-  background-color: #1b5e20;
-}
-/* ===== PROFILE CONTAINER ===== */
-.profile-container {
-  background-color: #ffffff;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
-  max-width: 1000px;
-  margin: 40px auto;
+  background: #c62828;
 }
 
-.profile-container h2 {
-  text-align: center;
-  color: #2e7d32;
+/* ===== PAGE WRAPPER ===== */
+.page-wrap {
+  max-width: 1080px;
+  margin: 32px auto;
+  padding: 0 24px 48px;
+}
+
+/* ===== PAGE TITLE ===== */
+.page-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #81a881;
   margin-bottom: 20px;
-  font-size: 26px;
-  font-weight: bold;
-  border-bottom: 2px solid #c8e6c9;
-  padding-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
 }
 
-/* ===== SHS Report Card Table Style ===== */
+.page-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #d4e8d4;
+}
+
+/* ===== NOTICE BANNER ===== */
+.notice-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #5d4037;
+}
+
+.notice-bar i {
+  font-size: 15px;
+  color: #f9a825;
+  flex-shrink: 0;
+}
+
+/* ===== YEAR BLOCK ===== */
+.year-block {
+  margin-bottom: 30px;
+}
+
+.year-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.year-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #d4e8d4;
+}
+
+.year-pill {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(135deg, #2e7d32, #43a047);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 16px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+/* ===== TABLE CARD ===== */
+.table-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e8f0e8;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+/* Category header bar */
+.cat-header {
+  background: linear-gradient(135deg, #2e7d32, #388e3c);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  padding: 10px 18px;
+}
+
+/* Horizontal scroll wrapper for wide tables */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* ===== SUBJECTS TABLE ===== */
 .subjects-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
-  font-family: "Times New Roman", serif;
-  font-size: 14px;
-  color: #000;
+  min-width: 700px;
 }
 
-/* Table Borders */
-.subjects-table th,
+/* Grouped semester header */
+.subjects-table thead th.sem-group-header {
+  background: #f6faf6;
+  color: #2e7d32;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e0ede0;
+  border-right: 2px solid #e0ede0;
+}
+
+.subjects-table thead th {
+  background: #f6faf6;
+  color: #4a7c59;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 12px;
+  text-align: center;
+  border-bottom: 1px solid #e8f0e8;
+  white-space: nowrap;
+}
+
+.subjects-table thead th.col-subject,
+.subjects-table thead th.col-teacher {
+  text-align: left;
+}
+
+/* Sub-header row for Q1/Q2 etc. */
+.sub-header-row th {
+  background: #fafffe !important;
+  color: #81a881 !important;
+  font-size: 10px !important;
+  padding: 6px 12px !important;
+  border-bottom: 1px solid #e8f0e8;
+}
+
+/* Body rows */
+.subjects-table tbody tr {
+  border-bottom: 1px solid #f5faf5;
+  transition: background 0.1s;
+}
+
+.subjects-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.subjects-table tbody tr:hover td {
+  background: #f9fffe;
+}
+
 .subjects-table td {
-  border: 1px solid #000;
-  padding: 8px 6px;
+  padding: 11px 12px;
+  font-size: 13px;
+  color: #2e3a2f;
   text-align: center;
   vertical-align: middle;
 }
 
-/* Header Styling */
-.subjects-table thead th {
-  background-color: #f2f2f2;
-  font-weight: bold;
+/* Subject name column */
+.td-name {
+  text-align: left !important;
+  font-weight: 600;
+  color: #1b3a1f;
 }
 
-/* Semester Titles (First Semester / Second Semester) */
-.semester-title {
-  font-weight: bold;
-  text-align: left;
-  padding: 10px 0;
+/* Teacher name column */
+.td-teacher {
+  text-align: left !important;
+  color: #546e7a;
+  font-size: 12px;
 }
 
-/* Section Headers */
-.section-header {
-  font-weight: bold;
-  text-align: left;
-  background-color: #f9f9f9;
-  padding-left: 8px;
+/* Column widths */
+.col-subject {
+  width: 26%;
+  min-width: 160px;
+}
+.col-teacher {
+  width: 16%;
+  min-width: 120px;
 }
 
-/* Subject Names */
-.subjects-table td.subject-name {
-  text-align: left;
-  padding-left: 10px;
+/* ===== GRADE PILL ===== */
+.grade {
+  display: inline-block;
+  min-width: 40px;
+  padding: 3px 8px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #e8f5e9;
+  color: #2e7d32;
 }
 
-/* Quarter & Final Columns */
-.subjects-table td.quarter,
-.subjects-table td.sem-final {
-  font-weight: normal;
+.grade.low {
+  background: #fdecea;
+  color: #c62828;
 }
 
-/* Highlight GWA or Final Grade (optional) */
-.subjects-table td.final-grade {
-  font-weight: bold;
+.grade.mid {
+  background: #fff8e1;
+  color: #f57f17;
 }
 
-/* General Average Row */
-.general-average {
-  font-weight: bold;
-  text-align: right;
-  background-color: #f2f2f2;
+.grade.none {
+  background: #f5f5f5;
+  color: #bdbdbd;
+  font-weight: 400;
 }
 
-/* Optional: No hover effects, as official report card is static */
-.subjects-table tr:hover {
-  background-color: inherit;
+/* ===== EMPTY STATE ===== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 0;
+  gap: 12px;
+  color: #a5c9a5;
 }
 
-/* Thin horizontal lines for clarity */
-.subjects-table tr td,
-.subjects-table tr th {
-  border-width: 1px;
+.empty-state i {
+  font-size: 36px;
+  color: #c8e6c9;
+}
+
+.empty-state p {
+  font-size: 14px;
+  color: #90a4ae;
 }
 
 /* ===== RESPONSIVE HEADER ===== */
 @media (max-width: 768px) {
   header {
     flex-wrap: wrap;
-    padding: 10px 15px;
+    height: auto;
+    padding: 10px 16px;
+    gap: 8px;
   }
 
   header h2 {
-    font-size: 18px;
-    margin-left: 15px;
+    font-size: 16px;
   }
 
   .menu-toggle {
     display: block;
-    order: 3;
   }
 
   .navbar {
     order: 4;
     width: 100%;
-    margin-top: 10px;
   }
 
   .navbar ul {
     display: none;
     flex-direction: column;
     width: 100%;
-    gap: 0;
-    background-color: #f4fbf4;
-    padding: 15px 0;
-    border-radius: 8px;
-    border: 1px solid #c8e6c9;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 8px;
+    margin-top: 4px;
   }
 
   .navbar ul.active {
     display: flex;
-    animation: slideDown 0.3s ease-out;
+    animation: slideDown 0.25s ease-out;
   }
 
   @keyframes slideDown {
     from {
       opacity: 0;
-      transform: translateY(-10px);
+      transform: translateY(-8px);
     }
     to {
       opacity: 1;
@@ -238,18 +421,32 @@ header h2 {
     }
   }
 
-  .navbar li a {
-    display: block;
-    padding: 12px 20px;
+  .navbar li {
     width: 100%;
-    margin: 2px 0;
-    border-radius: 0;
   }
 
-  .navbar li a.logout {
-    margin: 8px 20px;
-    border-radius: 6px;
-    text-align: center;
-    width: calc(100% - 40px);
+  .navbar li a {
+    padding: 10px 14px;
+    width: 100%;
+    border-radius: 8px;
+  }
+
+  .page-wrap {
+    padding: 0 14px 40px;
+    margin-top: 20px;
+  }
+
+  .year-pill {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  header h2 {
+    font-size: 14px;
+  }
+
+  .cat-header {
+    font-size: 11px;
   }
 }

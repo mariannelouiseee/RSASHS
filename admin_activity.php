@@ -4,18 +4,30 @@ include("functions.php");
 
 session_start();
 
-// ===== ADDITION: CHECK IF ADMIN IS LOGGED IN =====
+// Check if admin is logged in
 if (!isset($_SESSION['admin_id'])) {
     echo "<script>alert('You must be logged in as admin.'); window.location='login.php';</script>";
     exit();
 }
 
+// ===== AUTO-CLEANUP: Keep only the latest 250 logs =====
+$LOG_LIMIT = 250;
+$count_res = $conn->query("SELECT COUNT(*) AS total FROM activity_logs")->fetch_assoc();
+if ((int)$count_res['total'] >= $LOG_LIMIT) {
+    // Delete oldest logs beyond the limit, keeping the newest 249 to make room for the new entry
+    $keep = $LOG_LIMIT - 1;
+    $conn->query("DELETE FROM activity_logs WHERE id NOT IN (
+        SELECT id FROM (
+            SELECT id FROM activity_logs ORDER BY created_at DESC LIMIT $keep
+        ) AS latest
+    )");
+}
 
-// ===== ADDITION: LOG PAGE VISIT =====
+// Log page visit (inserted after cleanup so it counts as the newest entry)
 addLog($conn, $_SESSION['admin_id'], 'admin', "Visited activity logs page");
 
 // Pagination
-$limit = 10; // rows per page
+$limit = 10;
 $page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
 $start = ($page - 1) * $limit;
 
@@ -58,6 +70,9 @@ $total_pages = ceil($total_logs / $limit);
 
         <main class="dashboard">
             <h2>Activity Logs</h2>
+            <p style="font-size:13px; color:#777; margin-bottom:12px;">
+                Showing <?= $total_logs ?> / <?= $LOG_LIMIT ?> logs &mdash; oldest entries are removed automatically once the limit is reached.
+            </p>
             <div class="activity full-log">
                 <table>
                     <thead>
@@ -71,14 +86,14 @@ $total_pages = ceil($total_logs / $limit);
                         <?php if ($result->num_rows > 0): ?>
                             <?php while ($row = $result->fetch_assoc()): ?>
                                 <tr>
-                                    <td><?php echo $row['role']; ?></td>
-                                    <td><?php echo htmlspecialchars($row['description']); ?></td>
-                                    <td><?php echo date("M d, Y H:i", strtotime($row['created_at'])); ?></td>
+                                    <td><?= htmlspecialchars($row['role']); ?></td>
+                                    <td><?= htmlspecialchars($row['description']); ?></td>
+                                    <td><?= date("M d, Y H:i", strtotime($row['created_at'])); ?></td>
                                 </tr>
                             <?php endwhile; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="4">No logs found.</td>
+                                <td colspan="3">No logs found.</td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -87,8 +102,7 @@ $total_pages = ceil($total_logs / $limit);
                 <!-- Pagination -->
                 <div class="pagination">
                     <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                        <a href="?page=<?php echo $i; ?>" class="<?php if ($i == $page)
-                                                                        echo 'active'; ?>"><?php echo $i; ?></a>
+                        <a href="?page=<?= $i ?>" class="<?= $i == $page ? 'active' : '' ?>"><?= $i ?></a>
                     <?php endfor; ?>
                 </div>
             </div>

@@ -111,7 +111,7 @@
             <div class="page-header">
                 <div class="icon-wrap"><i class="fas fa-bullhorn"></i></div>
                 <div>
-                    <h1>Announcements</h1>
+                    <h1>ANNOUNCEMENTS</h1>
                     <p>Create, schedule, and manage school announcements</p>
                 </div>
             </div>

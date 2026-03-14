@@ -10,21 +10,16 @@ if (!isset($_SESSION['student_id'])) {
 
 $student_id = $_SESSION['student_id'];
 
-// Log viewing
 addLog($conn, $student_id, 'student', 'Viewed report card');
 
-// ===== CHECK GRADE VISIBILITY FOR STUDENT'S SECTION =====
+// Check grade visibility
 $stmtInfo = $conn->prepare("SELECT year_level, section_name FROM students WHERE student_id = ?");
 $stmtInfo->bind_param("i", $student_id);
 $stmtInfo->execute();
 $studentInfo = $stmtInfo->get_result()->fetch_assoc();
 $stmtInfo->close();
 
-$stmtVis = $conn->prepare("
-    SELECT grades_visible FROM sections 
-    WHERE section_name = ? AND year_level = ?
-    LIMIT 1
-");
+$stmtVis = $conn->prepare("SELECT grades_visible FROM sections WHERE section_name = ? AND year_level = ? LIMIT 1");
 $stmtVis->bind_param("ss", $studentInfo['section_name'], $studentInfo['year_level']);
 $stmtVis->execute();
 $visRow = $stmtVis->get_result()->fetch_assoc();
@@ -32,178 +27,189 @@ $stmtVis->close();
 
 $gradesVisible = $visRow['grades_visible'] ?? 0;
 
-// ===== FETCH ALL SCHOOL YEARS =====
-$sqlYears = "SELECT DISTINCT school_year 
-             FROM grades 
-             WHERE student_id = ?
-             ORDER BY school_year DESC";
-
-$stmtYears = $conn->prepare($sqlYears);
+// Fetch all school years
+$stmtYears = $conn->prepare("SELECT DISTINCT school_year FROM grades WHERE student_id = ? ORDER BY school_year DESC");
 $stmtYears->bind_param("i", $student_id);
 $stmtYears->execute();
 $resYears = $stmtYears->get_result();
-
 $school_years = [];
-while ($row = $resYears->fetch_assoc()) {
-    $school_years[] = $row['school_year'];
-}
-
+while ($row = $resYears->fetch_assoc()) $school_years[] = $row['school_year'];
 $stmtYears->close();
 
-// ===== FETCH SUBJECTS PER SCHOOL YEAR =====
+// Fetch subjects per school year
 $tables_by_year = [];
-
 $sqlSubjects = "
-SELECT 
-    sub.subject_name,
-    sub.category,
-    CONCAT(t.first_name, ' ', t.last_name) AS teacher_name,
-    g.q1, g.q2, g.q3, g.q4,
-    g.first_sem_final, g.gwa_first_sem,
-    g.second_sem_final, g.gwa_second_sem,
-    g.final
-FROM students stu
-INNER JOIN sections sec
-    ON stu.section_name = sec.section_name
-   AND stu.year_level = sec.year_level
-INNER JOIN section_subjects ss
-    ON sec.section_id = ss.section_id
-INNER JOIN subjects sub
-    ON ss.subject_id = sub.subject_id
-LEFT JOIN teachers t
-    ON sub.teacher_id = t.teacher_id
-LEFT JOIN grades g
-    ON g.student_id = stu.student_id
-   AND g.subject_id = sub.subject_id
-   AND g.school_year = ?
-WHERE stu.student_id = ?
-ORDER BY sub.category, sub.subject_name
-";
+    SELECT sub.subject_name, sub.category,
+           CONCAT(t.first_name, ' ', t.last_name) AS teacher_name,
+           g.q1, g.q2, g.q3, g.q4,
+           g.first_sem_final, g.gwa_first_sem,
+           g.second_sem_final, g.gwa_second_sem, g.final
+    FROM students stu
+    INNER JOIN sections sec ON stu.section_name = sec.section_name AND stu.year_level = sec.year_level
+    INNER JOIN section_subjects ss ON sec.section_id = ss.section_id
+    INNER JOIN subjects sub ON ss.subject_id = sub.subject_id
+    LEFT JOIN teachers t ON sub.teacher_id = t.teacher_id
+    LEFT JOIN grades g ON g.student_id = stu.student_id AND g.subject_id = sub.subject_id AND g.school_year = ?
+    WHERE stu.student_id = ?
+    ORDER BY sub.category, sub.subject_name";
 
 $stmtSubjects = $conn->prepare($sqlSubjects);
-
 foreach ($school_years as $sy) {
     $stmtSubjects->bind_param("si", $sy, $student_id);
     $stmtSubjects->execute();
     $res = $stmtSubjects->get_result();
-
     $subjects_by_category = [];
-    while ($row = $res->fetch_assoc()) {
-        $subjects_by_category[$row['category']][] = $row;
-    }
-
+    while ($row = $res->fetch_assoc()) $subjects_by_category[$row['category']][] = $row;
     $tables_by_year[$sy] = $subjects_by_category;
 }
-
 $stmtSubjects->close();
 $conn->close();
-?>
 
+// Helper: colour-code a grade value
+function gradeClass($val)
+{
+    if ($val === null || $val === '') return 'none';
+    if ($val < 75) return 'low';
+    if ($val < 80) return 'mid';
+    return '';
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>My Grades</title>
     <link rel="stylesheet" href="subjects.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link rel="icon" type="image/x-icon" href="./img/logo.jpg">
 </head>
 
 <body>
-
     <header>
         <div class="header-left">
-            <img src="./img/logo.jpg" alt="RSASHS Logo" style="height:48px;">
+            <img src="./img/logo.jpg" alt="RSASHS Logo">
             <h2>RSASHS E-PORTAL</h2>
         </div>
-        <button id="menuToggle" class="menu-toggle">☰</button>
+        <button id="menuToggle" class="menu-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
         <nav class="navbar" id="navbarLinks">
             <ul>
-                <li><a href="dashboard.php">Dashboard</a></li>
-                <li><a href="student.php">Profile</a></li>
-                <li><a href="subjects.php">Subjects</a></li>
-                <li><a href="logout.php" class="logout">Logout</a></li>
+                <li><a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="student.php"><i class="fas fa-user"></i> Profile</a></li>
+                <li><a href="subjects.php" class="active"><i class="fas fa-book-open"></i> Subjects</a></li>
+                <li><a href="logout.php" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </nav>
     </header>
 
-    <div class="profile-container">
-        <h2>MY SUBJECTS & GRADES</h2>
+    <div class="page-wrap">
+
+        <div class="page-title">
+            My Subjects &amp; Grades
+        </div>
 
         <?php if (!$gradesVisible): ?>
-            <div style="
-                background: #fff8e1;
-                border: 1px solid #f9a825;
-                border-radius: 8px;
-                padding: 12px 18px;
-                margin-bottom: 16px;
-                color: #6d4c00;
-                font-size: 14px;
-            ">
-                🔒 Grades are currently not yet released by your adviser.
+            <div class="notice-bar">
+                <i class="fas fa-lock"></i>
+                Grades are currently not yet released by your adviser.
             </div>
         <?php endif; ?>
 
         <?php if (!empty($tables_by_year)): ?>
             <?php foreach ($tables_by_year as $school_year => $subjects_by_category): ?>
-                <h3>School Year: <?= htmlspecialchars($school_year) ?></h3>
 
-                <?php if (!empty($subjects_by_category)): ?>
-                    <table class="subjects-table">
-                        <thead>
-                            <tr>
-                                <th>Subject</th>
-                                <th>Teacher</th>
-                                <?php if ($gradesVisible): ?>
-                                    <th>Q1</th>
-                                    <th>Q2</th>
-                                    <th>1st Sem Final</th>
-                                    <th>GWA 1st Sem</th>
-                                    <th>Q3</th>
-                                    <th>Q4</th>
-                                    <th>2nd Sem Final</th>
-                                    <th>GWA 2nd Sem</th>
-                                    <th>Final</th>
-                                <?php endif; ?>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($subjects_by_category as $category => $subjects): ?>
-                                <tr class="category-row">
-                                    <td colspan="<?= $gradesVisible ? '11' : '2' ?>">
-                                        <?= htmlspecialchars($category) ?>
-                                    </td>
-                                </tr>
-                                <?php foreach ($subjects as $s): ?>
-                                    <tr>
-                                        <td><?= htmlspecialchars($s['subject_name']) ?></td>
-                                        <td><?= htmlspecialchars($s['teacher_name'] ?? 'Unassigned') ?></td>
-                                        <?php if ($gradesVisible): ?>
-                                            <td><?= $s['q1'] ?? '-' ?></td>
-                                            <td><?= $s['q2'] ?? '-' ?></td>
-                                            <td><?= $s['first_sem_final'] ?? '-' ?></td>
-                                            <td><?= $s['gwa_first_sem'] ?? '-' ?></td>
-                                            <td><?= $s['q3'] ?? '-' ?></td>
-                                            <td><?= $s['q4'] ?? '-' ?></td>
-                                            <td><?= $s['second_sem_final'] ?? '-' ?></td>
-                                            <td><?= $s['gwa_second_sem'] ?? '-' ?></td>
-                                            <td><?= $s['final'] ?? '-' ?></td>
-                                        <?php endif; ?>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php else: ?>
-                    <p>No subjects or grades found for school year <?= htmlspecialchars($school_year) ?>.</p>
-                <?php endif; ?>
-                <hr>
+                <div class="year-block">
+                    <div class="year-label">
+                        <span class="year-pill">
+                            <i class="fas fa-calendar-alt" style="margin-right:5px;"></i>
+                            School Year <?= htmlspecialchars($school_year) ?>
+                        </span>
+                    </div>
+
+                    <?php if (!empty($subjects_by_category)): ?>
+                        <?php foreach ($subjects_by_category as $category => $subjects): ?>
+
+                            <div class="table-card">
+                                <div class="cat-header">
+                                    <i class="fas fa-layer-group" style="margin-right:7px;font-size:12px;"></i>
+                                    <?= htmlspecialchars($category) ?>
+                                </div>
+
+                                <div class="table-scroll">
+                                    <table class="subjects-table">
+                                        <thead>
+                                            <tr>
+                                                <th class="col-subject">Subject</th>
+                                                <th class="col-teacher">Teacher</th>
+                                                <?php if ($gradesVisible): ?>
+                                                    <th colspan="4" class="sem-group-header">1st Semester</th>
+                                                    <th colspan="4" class="sem-group-header">2nd Semester</th>
+                                                    <th>Final</th>
+                                                <?php endif; ?>
+                                            </tr>
+                                            <?php if ($gradesVisible): ?>
+                                                <tr class="sub-header-row">
+                                                    <th class="col-subject"></th>
+                                                    <th class="col-teacher"></th>
+                                                    <th>Q1</th>
+                                                    <th>Q2</th>
+                                                    <th>Final</th>
+                                                    <th>GWA</th>
+                                                    <th>Q3</th>
+                                                    <th>Q4</th>
+                                                    <th>Final</th>
+                                                    <th>GWA</th>
+                                                    <th></th>
+                                                </tr>
+                                            <?php endif; ?>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($subjects as $s): ?>
+                                                <tr>
+                                                    <td class="col-subject td-name"><?= htmlspecialchars($s['subject_name']) ?></td>
+                                                    <td class="col-teacher td-teacher"><?= htmlspecialchars($s['teacher_name'] ?? 'Unassigned') ?></td>
+                                                    <?php if ($gradesVisible): ?>
+                                                        <?php
+                                                        $cols = ['q1', 'q2', 'first_sem_final', 'gwa_first_sem', 'q3', 'q4', 'second_sem_final', 'gwa_second_sem', 'final'];
+                                                        foreach ($cols as $col):
+                                                            $v = $s[$col] ?? null;
+                                                            $cls = gradeClass($v);
+                                                        ?>
+                                                            <td>
+                                                                <span class="grade <?= $cls ?>">
+                                                                    <?= ($v !== null && $v !== '') ? htmlspecialchars($v) : '—' ?>
+                                                                </span>
+                                                            </td>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div><!-- .table-scroll -->
+                            </div><!-- .table-card -->
+
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <p>No subjects found for school year <?= htmlspecialchars($school_year) ?>.</p>
+                        </div>
+                    <?php endif; ?>
+                </div><!-- .year-block -->
+
             <?php endforeach; ?>
         <?php else: ?>
-            <p>No grades found.</p>
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>No grades found for your account.</p>
+            </div>
         <?php endif; ?>
 
-    </div>
+    </div><!-- .page-wrap -->
 
     <script>
         document.getElementById("menuToggle").addEventListener("click", () => {
@@ -211,11 +217,9 @@ $conn->close();
         });
 
         (function() {
-            const INACTIVITY_LIMIT = 5 * 60 * 1000;
-            const WARNING_TIME = 10 * 1000;
-
-            let inactivityTimer;
-            let warningTimer;
+            const INACTIVITY_LIMIT = 5 * 60 * 1000,
+                WARNING_TIME = 10 * 1000;
+            let inactivityTimer, warningTimer;
 
             function resetTimer() {
                 clearTimeout(inactivityTimer);
@@ -226,11 +230,9 @@ $conn->close();
 
             function showWarning() {
                 if (document.getElementById('inactivityWarning')) return;
-
-                const warningDiv = document.createElement('div');
-                warningDiv.id = 'inactivityWarning';
-
-                Object.assign(warningDiv.style, {
+                const d = document.createElement('div');
+                d.id = 'inactivityWarning';
+                Object.assign(d.style, {
                     position: 'fixed',
                     top: '20px',
                     right: '20px',
@@ -241,7 +243,7 @@ $conn->close();
                     padding: '20px',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
                     color: '#2e3a2f',
-                    fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+                    fontFamily: '"Segoe UI",Tahoma,Geneva,Verdana,sans-serif',
                     fontSize: '14px',
                     lineHeight: '1.4',
                     display: 'flex',
@@ -251,38 +253,22 @@ $conn->close();
                     transition: 'opacity 0.5s ease',
                     zIndex: 10000
                 });
-
-                warningDiv.innerHTML = `
-                    <strong style="font-size:16px; color:#1b5e20;">Inactivity Warning</strong>
-                    <span>You have been inactive. You will be logged out in <span id="countdown">10</span> seconds.</span>
-                    <button id="stayLoggedIn" style="
-                        padding:8px 12px;
-                        background:#2e7d32;
-                        color:white;
-                        border:none;
-                        border-radius:6px;
-                        font-weight:bold;
-                        cursor:pointer;
-                        align-self:flex-end;
-                        transition: background 0.3s;
-                    ">Stay Logged In</button>
-                `;
-
-                document.body.appendChild(warningDiv);
-                setTimeout(() => warningDiv.style.opacity = 1, 10);
-
-                let countdown = 10;
-                const countdownSpan = document.getElementById('countdown');
-                const interval = setInterval(() => {
-                    countdown--;
-                    if (countdown <= 0) clearInterval(interval);
-                    countdownSpan.textContent = countdown;
+                d.innerHTML = `
+                    <strong style="font-size:16px;color:#1b5e20;">Inactivity Warning</strong>
+                    <span>You will be logged out in <span id="countdown">10</span> seconds.</span>
+                    <button id="stayLoggedIn" style="padding:8px 12px;background:#2e7d32;color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;align-self:flex-end;">Stay Logged In</button>`;
+                document.body.appendChild(d);
+                setTimeout(() => d.style.opacity = 1, 10);
+                let c = 10;
+                const span = document.getElementById('countdown');
+                const iv = setInterval(() => {
+                    if (--c <= 0) clearInterval(iv);
+                    span.textContent = c;
                 }, 1000);
-
                 document.getElementById('stayLoggedIn').addEventListener('click', () => {
-                    clearInterval(interval);
-                    warningDiv.style.opacity = 0;
-                    setTimeout(() => warningDiv.remove(), 300);
+                    clearInterval(iv);
+                    d.style.opacity = 0;
+                    setTimeout(() => d.remove(), 300);
                     resetTimer();
                 });
             }
@@ -292,25 +278,20 @@ $conn->close();
                         method: 'POST',
                         credentials: 'same-origin'
                     })
-                    .then(resp => resp.json())
-                    .then(data => {
-                        alert(data.message || 'You have been logged out due to inactivity.');
+                    .then(r => r.json())
+                    .then(d => {
+                        alert(d.message || 'Logged out.');
                         window.location.href = 'login.php';
                     })
-                    .catch(err => {
-                        console.error('Auto logout error:', err);
+                    .catch(() => {
                         window.location.href = 'login.php';
                     });
             }
 
-            ['mousemove', 'keydown', 'mousedown', 'touchstart'].forEach(evt => {
-                document.addEventListener(evt, resetTimer);
-            });
-
+            ['mousemove', 'keydown', 'mousedown', 'touchstart'].forEach(e => document.addEventListener(e, resetTimer));
             resetTimer();
         })();
     </script>
-
 </body>
 
 </html>

@@ -20,27 +20,27 @@ $stmt_sec->execute();
 $result_sec = $stmt_sec->get_result();
 
 $sections = [];
-while ($sec = $result_sec->fetch_assoc()) {
-    $sections[] = $sec;
-}
+while ($sec = $result_sec->fetch_assoc()) $sections[] = $sec;
 $stmt_sec->close();
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Advisory Class</title>
-    <link rel="icon" type="image/x-icon" href="./img/logo.jpg">
     <link rel="stylesheet" href="teacher.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="icon" type="image/x-icon" href="./img/logo.jpg">
     <style>
+        /* ===== TOGGLE SWITCH ===== */
         .toggle-switch {
             position: relative;
             display: inline-block;
-            width: 48px;
-            height: 26px;
+            width: 46px;
+            height: 24px;
+            flex-shrink: 0;
         }
 
         .toggle-switch input {
@@ -54,15 +54,15 @@ $stmt_sec->close();
             cursor: pointer;
             inset: 0;
             background: #ccc;
-            border-radius: 26px;
+            border-radius: 24px;
             transition: .3s;
         }
 
         .slider:before {
             content: "";
             position: absolute;
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             left: 3px;
             bottom: 3px;
             background: white;
@@ -71,139 +71,316 @@ $stmt_sec->close();
         }
 
         input:checked+.slider {
-            background: #2e7d32;
+            background: #4caf50;
         }
 
         input:checked+.slider:before {
             transform: translateX(22px);
         }
 
-        .toggle-label {
-            font-size: 13px;
-            color: #555;
-            font-weight: 600;
-        }
-
-        .section-header {
+        /* ===== VISIBILITY BANNER inside card ===== */
+        .visibility-bar {
             display: flex;
             align-items: center;
-            gap: 14px;
-            margin-bottom: 6px;
+            justify-content: space-between;
+            padding: 12px 20px;
+            border-bottom: 1px solid #f0f4f0;
+            background: #fafffe;
+            gap: 12px;
             flex-wrap: wrap;
         }
 
-        .section-header h4 {
-            margin: 0;
+        .visibility-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .visibility-info i {
+            font-size: 13px;
+        }
+
+        .vis-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .vis-status.visible {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+
+        .vis-status.hidden {
+            background: #fff8e1;
+            color: #f57f17;
+            border: 1px solid #ffe082;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-hint {
+            font-size: 11px;
+            color: #90a4ae;
+            font-weight: 500;
+        }
+
+        /* ===== STUDENT TABLE inside card ===== */
+        .advisory-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 420px;
+        }
+
+        .advisory-table thead th {
+            background: #f6faf6;
+            color: #4a7c59;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 11px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e8f0e8;
+        }
+
+        .advisory-table thead th.col-action {
+            text-align: center;
+        }
+
+        .advisory-table tbody tr {
+            border-bottom: 1px solid #f5faf5;
+            transition: background 0.1s;
+        }
+
+        .advisory-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .advisory-table tbody tr:hover td {
+            background: #f9fffe;
+        }
+
+        .advisory-table td {
+            padding: 11px 16px;
+            font-size: 13px;
+            color: #2e3a2f;
+            vertical-align: middle;
+        }
+
+        .advisory-table td.col-id {
+            font-weight: 600;
+            color: #546e7a;
+            font-size: 12px;
+        }
+
+        .advisory-table td.col-name {
+            font-weight: 600;
+            color: #1b3a1f;
+        }
+
+        .advisory-table td.col-action {
+            text-align: center;
+        }
+
+        .col-id {
+            width: 25%;
+        }
+
+        .col-name {
+            width: 45%;
+        }
+
+        .col-action {
+            width: 30%;
+        }
+
+        /* Print button */
+        .btn-print-card {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #fff;
+            border: 1.5px solid #c8e6c9;
+            color: #2e7d32;
+            padding: 6px 13px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: background 0.15s, border-color 0.15s, transform 0.1s;
+            white-space: nowrap;
+        }
+
+        .btn-print-card:hover {
+            background: #e8f5e9;
+            border-color: #2e7d32;
+            transform: translateY(-1px);
+        }
+
+        .btn-print-card i {
+            font-size: 11px;
         }
     </style>
 </head>
 
 <body>
 
+    <!-- ===== HEADER ===== -->
     <header>
         <div class="header-left">
             <img src="./img/logo.jpg" alt="RSASHS Logo">
             <h2>RSASHS E-PORTAL</h2>
         </div>
-        <button id="menuToggle" class="menu-toggle"><i class="fas fa-bars"></i></button>
+        <button id="menuToggle" class="menu-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
         <nav class="navbar" id="navbarLinks">
             <ul>
-                <li><a href="teacher_dashboard.php">Dashboard</a></li>
-                <li><a href="teacher_advisory.php" class="active">Advisory Class</a></li>
-                <li><a href="logout.php" class="logout">Logout</a></li>
+                <li><a href="teacher_dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="teacher_advisory.php" class="active"><i class="fas fa-users"></i> Advisory Class</a></li>
+                <li><a href="logout.php" class="logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </nav>
     </header>
 
-    <script>
-        const menuToggle = document.getElementById('menuToggle');
-        const navbar = document.getElementById('navbarLinks');
-        menuToggle.addEventListener('click', () => navbar.classList.toggle('active'));
-    </script>
+    <!-- ===== PAGE WRAPPER ===== -->
+    <div class="page-wrap">
 
-    <main class="subjects-container">
-        <h3>ADVISORY CLASS</h3>
+        <div class="page-title">Advisory Class</div>
 
         <?php if (empty($sections)): ?>
-            <p>You are not assigned as an adviser to any section.</p>
+            <div class="empty-state">
+                <i class="fas fa-user-slash"></i>
+                <p>You are not assigned as an adviser to any section.</p>
+            </div>
         <?php else: ?>
             <?php foreach ($sections as $sec): ?>
 
-                <div class="section-header">
-                    <h4><?= htmlspecialchars($sec['year_level'] . ' - ' . $sec['section_name'] . ' | ' . $sec['school_year']) ?></h4>
-                    <label class="toggle-switch" title="Toggle grade visibility for students">
-                        <input type="checkbox" class="grade-toggle"
-                            data-section-id="<?= $sec['section_id'] ?>"
-                            <?= $sec['grades_visible'] ? 'checked' : '' ?>>
-                        <span class="slider"></span>
-                    </label>
-                    <span class="toggle-label" id="label-<?= $sec['section_id'] ?>">
-                        <?= $sec['grades_visible'] ? '✅ Grades: Visible' : '🔒 Grades: Hidden' ?>
+                <!-- Section group label -->
+                <div class="section-group-label">
+                    <span class="sgb-pill">
+                        <i class="fas fa-layer-group"></i>
+                        <?= htmlspecialchars($sec['year_level']) ?>
                     </span>
+                    <span class="sgb-sep">&mdash;</span>
+                    <span class="sgb-section"><?= htmlspecialchars($sec['section_name']) ?></span>
+                    <span class="sgb-year">S.Y. <?= htmlspecialchars($sec['school_year']) ?></span>
                 </div>
 
-                <table border="1" cellpadding="5" cellspacing="0" style="margin-bottom:20px; width:100%;">
-                    <thead>
-                        <tr>
-                            <th>Student ID</th>
-                            <th>Name</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        $stmt_stu = $conn->prepare("
-                        SELECT student_id, CONCAT(first_name,' ',last_name) AS name
-                        FROM students
-                        WHERE year_level=? AND section_name=? AND school_year=?
-                        ORDER BY last_name, first_name
-                    ");
-                        $stmt_stu->bind_param("sss", $sec['year_level'], $sec['section_name'], $sec['school_year']);
-                        $stmt_stu->execute();
-                        $res_stu = $stmt_stu->get_result();
+                <!-- Section card -->
+                <div class="table-card" style="margin-bottom:22px;">
 
-                        if ($res_stu->num_rows > 0):
-                            while ($stu = $res_stu->fetch_assoc()):
-                        ?>
+                    <!-- Grade visibility bar -->
+                    <div class="visibility-bar">
+                        <div class="visibility-info">
+                            <i class="fas fa-eye" style="color:#4caf50;"></i>
+                            Grade Visibility for Students:
+                            <span class="vis-status <?= $sec['grades_visible'] ? 'visible' : 'hidden' ?>"
+                                id="vis-status-<?= $sec['section_id'] ?>">
+                                <i class="fas fa-<?= $sec['grades_visible'] ? 'check-circle' : 'lock' ?>"></i>
+                                <?= $sec['grades_visible'] ? 'Visible' : 'Hidden' ?>
+                            </span>
+                        </div>
+                        <div class="toggle-row">
+                            <span class="toggle-hint">Toggle to release grades</span>
+                            <label class="toggle-switch" title="Toggle grade visibility for students">
+                                <input type="checkbox" class="grade-toggle"
+                                    data-section-id="<?= $sec['section_id'] ?>"
+                                    <?= $sec['grades_visible'] ? 'checked' : '' ?>>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Student list table -->
+                    <div class="table-scroll">
+                        <table class="advisory-table">
+                            <thead>
                                 <tr>
-                                    <td><?= htmlspecialchars($stu['student_id']) ?></td>
-                                    <td><?= htmlspecialchars($stu['name']) ?></td>
-                                    <td>
-                                        <a class="btn-print"
-                                            href="print_report_card.php?student_id=<?= urlencode($stu['student_id']) ?>&year_level=<?= urlencode($sec['year_level']) ?>&section_name=<?= urlencode($sec['section_name']) ?>&school_year=<?= urlencode($sec['school_year']) ?>"
-                                            target="_blank">
-                                            <i class="fas fa-print"></i> Print Report Card
-                                        </a>
-                                    </td>
+                                    <th class="col-id">Student ID</th>
+                                    <th class="col-name">Full Name</th>
+                                    <th class="col-action">Action</th>
                                 </tr>
-                        <?php
-                            endwhile;
-                        else:
-                            echo '<tr><td colspan="3">No students assigned to this section.</td></tr>';
-                        endif;
-                        $stmt_stu->close();
-                        ?>
-                    </tbody>
-                </table>
+                            </thead>
+                            <tbody>
+                                <?php
+                                $stmt_stu = $conn->prepare("
+                                    SELECT student_id, CONCAT(first_name,' ',last_name) AS name
+                                    FROM students
+                                    WHERE year_level=? AND section_name=? AND school_year=?
+                                    ORDER BY last_name, first_name
+                                ");
+                                $stmt_stu->bind_param("sss", $sec['year_level'], $sec['section_name'], $sec['school_year']);
+                                $stmt_stu->execute();
+                                $res_stu = $stmt_stu->get_result();
+
+                                if ($res_stu->num_rows > 0):
+                                    while ($stu = $res_stu->fetch_assoc()):
+                                ?>
+                                        <tr>
+                                            <td class="col-id"><?= htmlspecialchars($stu['student_id']) ?></td>
+                                            <td class="col-name"><?= htmlspecialchars($stu['name']) ?></td>
+                                            <td class="col-action">
+                                                <a class="btn-print-card"
+                                                    href="print_report_card.php?student_id=<?= urlencode($stu['student_id']) ?>&year_level=<?= urlencode($sec['year_level']) ?>&section_name=<?= urlencode($sec['section_name']) ?>&school_year=<?= urlencode($sec['school_year']) ?>"
+                                                    target="_blank">
+                                                    <i class="fas fa-print"></i> Print Report Card
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php
+                                    endwhile;
+                                else:
+                                    ?>
+                                    <tr>
+                                        <td colspan="3" style="text-align:center; color:#90a4ae; padding:20px;">
+                                            No students assigned to this section.
+                                        </td>
+                                    </tr>
+                                <?php
+                                endif;
+                                $stmt_stu->close();
+                                ?>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div><!-- .table-card -->
 
             <?php endforeach; ?>
         <?php endif; ?>
-    </main>
+
+    </div><!-- .page-wrap -->
 
     <script>
-        // ===== GRADE VISIBILITY TOGGLE =====
+        document.getElementById("menuToggle").addEventListener("click", () => {
+            document.querySelector("#navbarLinks ul").classList.toggle("active");
+        });
+
+        // Grade visibility toggle
         document.querySelectorAll('.grade-toggle').forEach(toggle => {
             toggle.addEventListener('change', function() {
                 const sectionId = this.dataset.sectionId;
                 const state = this.checked ? 1 : 0;
-                const label = document.getElementById('label-' + sectionId);
+                const statusEl = document.getElementById('vis-status-' + sectionId);
                 const checkbox = this;
 
-                // ===== CONFIRMATION BEFORE MAKING VISIBLE =====
                 if (state === 1) {
-                    const confirmed = confirm('Are you sure you want to make the grades visible to students?');
+                    const confirmed = confirm('Are you sure you want to make grades visible to students?');
                     if (!confirmed) {
-                        checkbox.checked = false; // revert toggle
+                        checkbox.checked = false;
                         return;
                     }
                 }
@@ -218,7 +395,13 @@ $stmt_sec->close();
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
-                            label.textContent = state ? '✅ Grades: Visible' : '🔒 Grades: Hidden';
+                            if (state) {
+                                statusEl.className = 'vis-status visible';
+                                statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Visible';
+                            } else {
+                                statusEl.className = 'vis-status hidden';
+                                statusEl.innerHTML = '<i class="fas fa-lock"></i> Hidden';
+                            }
                         } else {
                             alert('Failed to update. Please try again.');
                             checkbox.checked = !checkbox.checked;
@@ -231,10 +414,10 @@ $stmt_sec->close();
             });
         });
 
-        // ===== INACTIVITY LOGOUT =====
+        // Inactivity logout
         (function() {
-            const INACTIVITY_LIMIT = 5 * 60 * 1000;
-            const WARNING_TIME = 10 * 1000;
+            const INACTIVITY_LIMIT = 5 * 60 * 1000,
+                WARNING_TIME = 10 * 1000;
             let inactivityTimer, warningTimer;
 
             function resetTimer() {
@@ -246,9 +429,9 @@ $stmt_sec->close();
 
             function showWarning() {
                 if (document.getElementById('inactivityWarning')) return;
-                const warningDiv = document.createElement('div');
-                warningDiv.id = 'inactivityWarning';
-                Object.assign(warningDiv.style, {
+                const d = document.createElement('div');
+                d.id = 'inactivityWarning';
+                Object.assign(d.style, {
                     position: 'fixed',
                     top: '20px',
                     right: '20px',
@@ -259,7 +442,7 @@ $stmt_sec->close();
                     padding: '20px',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
                     color: '#2e3a2f',
-                    fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+                    fontFamily: '"Segoe UI",Tahoma,Geneva,Verdana,sans-serif',
                     fontSize: '14px',
                     lineHeight: '1.4',
                     display: 'flex',
@@ -269,26 +452,22 @@ $stmt_sec->close();
                     transition: 'opacity 0.5s ease',
                     zIndex: 10000
                 });
-                warningDiv.innerHTML = `
-                <strong style="font-size:16px;color:#1b5e20;">Inactivity Warning</strong>
-                <span>You have been inactive. You will be logged out in <span id="countdown">10</span> seconds.</span>
-                <button id="stayLoggedIn" style="padding:8px 12px;background:#2e7d32;color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;align-self:flex-end;">Stay Logged In</button>
-            `;
-                document.body.appendChild(warningDiv);
-                setTimeout(() => warningDiv.style.opacity = 1, 10);
-
-                let countdown = 10;
-                const countdownSpan = document.getElementById('countdown');
-                const interval = setInterval(() => {
-                    countdown--;
-                    if (countdown <= 0) clearInterval(interval);
-                    countdownSpan.textContent = countdown;
+                d.innerHTML = `
+                    <strong style="font-size:16px;color:#1b5e20;">Inactivity Warning</strong>
+                    <span>You will be logged out in <span id="countdown">10</span> seconds.</span>
+                    <button id="stayLoggedIn" style="padding:8px 12px;background:#2e7d32;color:white;border:none;border-radius:6px;font-weight:bold;cursor:pointer;align-self:flex-end;">Stay Logged In</button>`;
+                document.body.appendChild(d);
+                setTimeout(() => d.style.opacity = 1, 10);
+                let c = 10;
+                const span = document.getElementById('countdown');
+                const iv = setInterval(() => {
+                    if (--c <= 0) clearInterval(iv);
+                    span.textContent = c;
                 }, 1000);
-
                 document.getElementById('stayLoggedIn').addEventListener('click', () => {
-                    clearInterval(interval);
-                    warningDiv.style.opacity = 0;
-                    setTimeout(() => warningDiv.remove(), 300);
+                    clearInterval(iv);
+                    d.style.opacity = 0;
+                    setTimeout(() => d.remove(), 300);
                     resetTimer();
                 });
             }
@@ -299,8 +478,8 @@ $stmt_sec->close();
                         credentials: 'same-origin'
                     })
                     .then(r => r.json())
-                    .then(data => {
-                        alert(data.message || 'Logged out due to inactivity.');
+                    .then(d => {
+                        alert(d.message || 'Logged out.');
                         window.location.href = 'login.php';
                     })
                     .catch(() => {
@@ -308,7 +487,7 @@ $stmt_sec->close();
                     });
             }
 
-            ['mousemove', 'keydown', 'mousedown', 'touchstart'].forEach(evt => document.addEventListener(evt, resetTimer));
+            ['mousemove', 'keydown', 'mousedown', 'touchstart'].forEach(e => document.addEventListener(e, resetTimer));
             resetTimer();
         })();
     </script>

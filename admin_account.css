@@ -90,7 +90,9 @@ header h2 {
   font-size: 15px;
   text-decoration: none;
   border-left: 4px solid transparent;
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease;
   user-select: none;
 }
 
@@ -123,7 +125,9 @@ header h2 {
   font-size: 15px;
   color: white;
   border-left: 4px solid transparent;
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease;
   user-select: none;
 }
 
@@ -510,7 +514,9 @@ main form input[type="text"] {
   background: #f6ffe6;
   color: #2e3a2f;
   outline: none;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
   appearance: none;
 }
 
@@ -591,7 +597,9 @@ form.form-inline select {
   color: #2e3a2f;
   outline: none;
   appearance: none;
-  transition: border-color 0.3s, box-shadow 0.3s;
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s;
 }
 
 /* Focus effect */
